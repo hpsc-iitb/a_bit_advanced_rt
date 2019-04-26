@@ -22,7 +22,7 @@ namespace RayTrace{
         {
             throw std::invalid_argument("image row size < 1");
         }
-        size_t c = img.at[0].size();
+        size_t c = img.at(0).size();
         if (c < 1)
         {
             throw std::invalid_argument("image col size < 1");
