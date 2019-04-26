@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 namespace RayTrace{
-    Coordinate::Coordinate(FL_TYPE x = 0, FL_TYPE y = 0, FL_TYPE z = 0)
+    Coordinate::Coordinate(FL_TYPE x, FL_TYPE y, FL_TYPE z)
     {
         this->x = x;
         this->y = y;
@@ -53,15 +53,19 @@ namespace RayTrace{
         cd.nx = cd.x / cd.length;
         cd.ny = cd.y / cd.length;
         cd.nz = cd.z / cd.length;
+
+        return cd;
     }
 
     Coordinate Coordinate::cross(Coordinate &lt, Coordinate &rt)
     {
-
+        // TODO: implement
+        return lt;
     }
 
     Coordinate Coordinate::dot(Coordinate &lt, Coordinate &rt)
     {
-        
+        // TODO: implement
+        return lt;
     }
 }
