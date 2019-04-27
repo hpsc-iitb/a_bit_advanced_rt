@@ -5,14 +5,17 @@ project(ratyrace)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/libs)
 set(CMAKE_CXX_STANDARD 11)
+# set(CMAKE_CXX_F)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
+# set(CMAKE_CXX_FLAGS "-Ofast -march=native")
+set(CMAKE_CXX_FLAGS "-pg")
 
 #Headers
 include_directories(include)
 
 #Sources
 # AUX_SOURCE_DIRECTORY(src/ ALL_SOURCES)
-set(SOURCES src/main.cpp src/utils.cpp src/flags.cpp)
+set(SOURCES src/main.cpp src/utils.cpp src/flags.cpp src/domainparser.cpp src/raytrace.cpp)
 
 set(EXEC_NAME raytrace)
 

@@ -1,6 +1,7 @@
 #include "utils.hpp"
 
 #include <fstream>
+#include <iostream>
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -9,7 +10,8 @@
 
 namespace RayTrace{
 
-    void writeImage(std::vector<std::vector<FL_TYPE>> &img, std::string &fname, int max_val)
+    // void writeImage(std::vector<std::vector<FL_TYPE>> &img, std::string &fname, int max_val)
+    void writeImage(FL_TYPE *img, std::string fname, int max_val)
     {
         /* Write a greyscale PPM image
         Header format:
@@ -18,31 +20,33 @@ namespace RayTrace{
         {maxval}
         {r g b r g b ...}
         */
-        size_t r = img.size();
-        if (r < 1)
-        {
-            throw std::invalid_argument("image row size < 1");
-        }
-        size_t c = img.at(0).size();
-        if (c < 1)
-        {
-            throw std::invalid_argument("image col size < 1");
-        }
+        // size_t r = img.size();
+        // if (r < 1)
+        // {
+        //     throw std::invalid_argument("image row size < 1");
+        // }
+        // size_t c = img.at(0).size();
+        // if (c < 1)
+        // {
+        //     throw std::invalid_argument("image col size < 1");
+        // }
 
         // open the file
-        std::ofstream image_file(fname);
+        std::ofstream image_file(fname, std::ios::binary);
         // use 8bits
-        image_file << "P6\n" << r << " " << c << "\n" << max_val << "\n";
-        for (size_t _i = 0; _i < c; _i++)
+        image_file << "P6\n" << h << " " << w << "\n" << max_val << "\n";
+        for (size_t _i = 0; _i < h; _i++)
         {
-            for (size_t _j = 0; _j < r; _j++)
+            for (size_t _j = 0; _j < w; _j++)
             {
                 uint8_t r, g, b;
                 // bound pixel intensity in [0, 1]
-                FL_TYPE pixel_val = (img[r][c] > 1.0)?1.0:img[r][c];
-                pixel_val = (pixel_val < 0.0)?0.0:pixel_val;
+                FL_TYPE pp = img[_i * w + _j];
+                pp = (pp > 1.0)?1.0:pp;
+                pp = (pp < 0.0)?0.0:pp;
 
-                r = g = b = (uint8_t) 255 * pixel_val;
+                r = g = b = (uint8_t) 255 * pp;
+                image_file << r << g << b;
             }
         }
         image_file.close();
@@ -72,18 +76,21 @@ namespace RayTrace{
                 ray[idx] = cx;
                 ray[idx+1] = cy;
                 ray[idx+2] = cz;
+                // std::cout << idx << "\n";
 
                 FL_TYPE x_i_0 = _j * dx + xmin; 
                 FL_TYPE y_i_0 = _i * dy + ymin;
-                
-                FL_TYPE z_i_0 = image_plane_camera_distance * cos(pitch)\
-                    * cos(yaw);
+                FL_TYPE z_i_0 = image_plane_camera_distance + cz;
+                // std::cout << x_i_0 << " " << y_i_0 << " " << z_i_0 << " " << "\n";
 
-                x_i_0 *= cos(yaw);
-                y_i_0 *= cos(pitch);
+                // FL_TYPE z_i_0 = image_plane_camera_distance * cos(pitch)\
+                //     * cos(yaw) + x_i_0 * sin(yaw) + y_i_0 * sin(pitch);
 
-                x_i_0 += image_plane_camera_distance * sin(yaw) * cos(pitch);
-                y_i_0 += image_plane_camera_distance * sin(pitch);
+                // x_i_0 *= cos(yaw);
+                // y_i_0 *= cos(pitch);
+
+                // x_i_0 += image_plane_camera_distance * sin(yaw) * cos(pitch);
+                // y_i_0 += image_plane_camera_distance * sin(pitch);
 
                 ray[idx+3] = x_i_0;
                 ray[idx+4] = y_i_0;

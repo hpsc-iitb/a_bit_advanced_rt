@@ -15,7 +15,7 @@
 
 namespace RayTrace{
 
-    void writeImage(std::vector<std::vector<FL_TYPE>> &img, std::string &fname, int max_val = 255);
+    void writeImage(FL_TYPE *img, std::string fname, int max_val=255);
     // + 2 overloads
 
     // void 

@@ -6,6 +6,8 @@
 
 #include <flags.hpp>
 #include <utils.hpp>
+#include <raytrace.hpp>
+#include <domainparser.hpp>
 
 #ifdef COLOR
     const size_t channels = 3; // rgb
@@ -15,8 +17,21 @@
 
 std::vector<FL_TYPE> camera(3, 0);
 
+
 int main(int argc, char** argv)
 {
+    camera[0] = 30;
+    camera[1] = 30;
+    camera[2] = 25;
+
+    lx = -lx;
+    ly = -ly;
+    lz = -lz;
+    std::vector <FL_TYPE> element_vector;
+    unsigned int num_of_nodes;
+    unsigned int num_of_elements;
+    std::string file = "shadow";
+    DomainParser(file,element_vector,num_of_nodes,num_of_elements);
     // create image plane
     // [r g b  r g b ...]
     FL_TYPE *image_plane = \
@@ -34,13 +49,24 @@ int main(int argc, char** argv)
         throw std::runtime_error("can't allocate memory for rays");
     }
     RayTrace::updateRays(camera, rays);
-    for(size_t _i = 0; _i < w*h*6; _i+=6)
-    {
-        for(size_t _j = 0; _j < 6; _j++)
-        {
-            std::cout << rays[_i + _j] << " ";
-        }
-        std::cout << "\n";
-    }
+
+    FL_TYPE *nodes = &element_vector[0];
+    // FL_TYPE nodes[] = {-3.5, -2, -2, 0.5, -2, -3, 0.5, 2, -3.1, 
+                        // -1, -1.5, -2.5, 3, -1.5, -3.2, 3, 2.5, -2.4 };  
     
+    // FL_TYPE nodes[] = {-2, -2, 2, 2, -2, 2, 2, 2, 2};
+
+    FL_TYPE lights[] = {lx, ly, lz};
+    render(rays, nodes, element_vector.size() / 9, lights, 1, image_plane);
+    // render(rays, nodes, 1, lights, 1, image_plane);
+    // for(size_t _i = 0; _i < h; _i++)
+    // {
+    //     for(size_t _j = 0; _j < w; _j++)
+    //     {
+    //         std::cout << image_plane[_i * w + _j] << " ";
+    //     }
+    //     std::cout << "\n";
+    // }
+
+    RayTrace::writeImage(image_plane, "a.ppm");
 }

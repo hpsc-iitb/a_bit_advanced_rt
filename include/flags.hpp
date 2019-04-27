@@ -22,4 +22,9 @@ extern FL_TYPE image_plane_camera_distance; // distance of image plane from eye
 extern FL_TYPE pitch; // inclination from the horizontal, about x axis
 extern FL_TYPE yaw; // rotation about y axis
 
+// oner light source
+extern FL_TYPE lx;
+extern FL_TYPE ly;
+extern FL_TYPE lz;
+
 #endif
