@@ -108,6 +108,8 @@ void DomainParser(std::string file_name,std::vector <double> &element_vector,uns
                 element_vector[e_count+16] = e02y;
                 element_vector[e_count+17] = e02z;
 
+                element_vector[e_count+18] = normal_length;
+
                 counter1++;
             }    
         }

@@ -38,7 +38,7 @@ int main(int argc, char** argv)
     // create image plane
     // [r g b  r g b ...]
     FL_TYPE *image_plane = \
-        (FL_TYPE *)malloc(sizeof(FL_TYPE) * w * h * channels);
+        (FL_TYPE *)calloc(w * h * channels, sizeof(FL_TYPE));
     if(!image_plane)
     {
         throw std::runtime_error("can't allocate memory for image plane");

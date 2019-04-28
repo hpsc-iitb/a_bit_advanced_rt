@@ -24,7 +24,7 @@ void render(
     FL_TYPE rox, roy, roz, rdx, rdy, rdz; // ray vector
     FL_TYPE ax, ay, az, bx, by, bz, cx, cy, cz; // nodes
     FL_TYPE px, py, pz; // intersection point
-    FL_TYPE nx, ny, nz; // surface normal
+    FL_TYPE nx, ny, nz, nl; // surface normal
     FL_TYPE e01x, e01y, e01z, e02x, e02y, e02z;
     FL_TYPE ray_length_1; // 1/shadow_ray_length
 
@@ -65,12 +65,14 @@ void render(
             e02x = nodes[_j + 15];
             e02y = nodes[_j + 16];
             e02z = nodes[_j + 17];
+
+            nl = nodes[_j + 18];
             
             if(checkIntersection(
                 rox, roy, roz, rdx, rdy, rdz, ax, ay, az,
                 bx, by, bz, cx, cy, cz, nx, ny, nz,
                 e01x, e01y, e01z, e02x, e02y, e02z,
-                t, illum, u, v
+                t, illum, u, v, nl
             ))
             {
                 px = rox + t*rdx;
@@ -85,7 +87,7 @@ void render(
                     is_hit[_i/6] = _j/element_size;
                     ts[_i/6] = t;
                     min_dis = dis;
-                    image_plane[_i/6] = fabs(rdx * nx + rdy * ny + rdz * nz)/20;
+                    // image_plane[_i/6] = illum;
                 }
             }
         }
@@ -93,7 +95,7 @@ void render(
 
     std::cout << "Primary ray hit complete\n";
 
-    return;
+    // return;
     // calculate illumination
     for (size_t _j = 0; _j < w * h * 6; _j+=6)
     {
@@ -129,7 +131,7 @@ void render(
             rdz *= ray_length_1;
 
             illum = fabs(rdx * nx + rdy * ny + rdz * nz);
-            // illums[_i * w * h + _j/6] = 0.5;
+            illums[_i * w * h + _j/6] = illum;
 
         }        
     }
@@ -207,18 +209,20 @@ void render(
                 e02y = nodes[_j + 16];
                 e02z = nodes[_j + 17];
 
+                nl = nodes[_j + 18];
+
                 if(checkIntersection(
                     rox, roy, roz, rdx, rdy, rdz, ax, ay, az,
                     bx, by, bz, cx, cy, cz, nx, ny, nz,
                     e01x, e01y, e01z, e02x, e02y, e02z,
-                    t, illum, u, v
+                    t, illum, u, v, nl
                 ))
                 {
                     if(t < 0)
                     {
                         // image_plane[_i/6] = 0.0;
                         illums[_k * w * h + _i/6] = 0; // no illuminaiton due to this light
-                        std::cout << "shadowed";
+                        // std::cout << "shadowed";
                     }
                     
                     // std::cout << roz << " " << rdz << " " << ax << " " << ay << " " << az << " " << t << " " << u << " " << v <<  "\n";
@@ -245,7 +249,7 @@ inline bool checkIntersection(
      FL_TYPE e01x, FL_TYPE e01y, FL_TYPE e01z,
      FL_TYPE e02x, FL_TYPE e02y, FL_TYPE e02z,
      FL_TYPE &t, FL_TYPE &illum, FL_TYPE &u,
-     FL_TYPE &v
+     FL_TYPE &v, FL_TYPE nl
 )
 {   // calc the edges
 #ifndef USE_PRECOMPUTED_NORMALS
@@ -310,7 +314,7 @@ inline bool checkIntersection(
     // std::cout << "illum: " << illum << "\n";
     illum = fabs(illum);
 #else
-    FL_TYPE D = - (nx * rdx + ny*rdy + nz*rdz);  // |-d e1 e2| = -n.d
+    FL_TYPE D = - nl*(nx * rdx + ny*rdy + nz*rdz);  // |-d e1 e2| = -n.d
 
     if(fabs(D) < 1e-6)
     {
@@ -340,7 +344,10 @@ inline bool checkIntersection(
         return false;
     }
 
-    t = (tx*nx + ty*ny + tz*nz)/D;
+    t = (tx*nx + ty*ny + tz*nz)*nl/D;
+
+    // normalize(rdx, rdy, rdz, rdx, rdy, rdz);
+    // illum = fabs(rdx * nx + rdy * ny + rdz * nz);
 #endif
     return true;
 }

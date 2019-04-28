@@ -16,4 +16,4 @@ FL_TYPE ly = 35;
 FL_TYPE lz = 80;
 
 // 3 coords for 3 nodes, +3 surface normal components, +6 edge components
-size_t element_size = 18;
+size_t element_size = 19;
