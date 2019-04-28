@@ -20,9 +20,9 @@ std::vector<FL_TYPE> camera(3, 0);
 
 int main(int argc, char** argv)
 {
-    camera[0] = 10;
-    camera[1] = 10;
-    camera[2] = -8;
+    camera[0] = 30;
+    camera[1] = 30;
+    camera[2] = 30;
 
     // lx = -lx;
     // ly = -ly;
@@ -30,7 +30,7 @@ int main(int argc, char** argv)
     std::vector <FL_TYPE> element_vector;
     unsigned int num_of_nodes;
     unsigned int num_of_elements;
-    std::string file = "sphere_detailed";
+    std::string file = "shadow";
     DomainParser(file,element_vector,num_of_nodes,num_of_elements);
     // create image plane
     // [r g b  r g b ...]
