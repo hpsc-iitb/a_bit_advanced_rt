@@ -22,11 +22,11 @@ int main(int argc, char** argv)
 {
     camera[0] = 30;
     camera[1] = 30;
-    camera[2] = 25;
+    camera[2] = 60;
 
-    lx = -lx;
-    ly = -ly;
-    lz = -lz;
+    // lx = -lx;
+    // ly = -ly;
+    // lz = -lz;
     std::vector <FL_TYPE> element_vector;
     unsigned int num_of_nodes;
     unsigned int num_of_elements;

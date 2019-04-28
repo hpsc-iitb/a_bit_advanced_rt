@@ -101,7 +101,7 @@ void render(
     {
         if(is_hit[_j/6] == -1)
         {
-            image_plane[_j] = 0.0;
+            image_plane[_j/6] = 0.0;
             continue;
         }
         
@@ -137,7 +137,7 @@ void render(
     }
     
     std::cout << "Done calculating illumination\n";
-
+    // return;
 
     // now do the shadow rays
     // for (size_t _i = 0; _i < h * w; _i++)
@@ -160,7 +160,7 @@ void render(
         if (is_hit[_i/6] == -1)
         {
             // no planes hit
-            image_plane[_i/6] = 0.0;
+            // image_plane[_i/6] = 0.0;
             continue;
         }
         t = ts[_i/6];
@@ -218,15 +218,14 @@ void render(
                     t, illum, u, v, nl
                 ))
                 {
-                    if(t < 0)
+                    if(t > 0)
                     {
                         // image_plane[_i/6] = 0.0;
                         illums[_k * w * h + _i/6] = 0; // no illuminaiton due to this light
                         // std::cout << "shadowed";
+                        break;
                     }
-                    
                     // std::cout << roz << " " << rdz << " " << ax << " " << ay << " " << az << " " << t << " " << u << " " << v <<  "\n";
-                    break;
                 }
             }
         }
