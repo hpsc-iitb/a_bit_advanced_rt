@@ -13,6 +13,9 @@ inline bool checkIntersection(
      FL_TYPE ax, FL_TYPE ay, FL_TYPE az,
      FL_TYPE bx, FL_TYPE by, FL_TYPE bz,
      FL_TYPE cx, FL_TYPE cy, FL_TYPE cz,
+     FL_TYPE nx, FL_TYPE ny, FL_TYPE nz,
+     FL_TYPE e01x, FL_TYPE e01y, FL_TYPE e01z,
+     FL_TYPE e02x, FL_TYPE e02y, FL_TYPE e02z,
      FL_TYPE &t, FL_TYPE &illum, FL_TYPE &u,
      FL_TYPE &v
 );

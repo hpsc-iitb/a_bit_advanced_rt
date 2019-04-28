@@ -1,6 +1,7 @@
 #include <flags.hpp>
 #include <raytrace.hpp>
 #include <iostream>
+#include <cmath>
 
 
 void render(
@@ -15,12 +16,18 @@ void render(
     }
     
     FL_TYPE *ts = (FL_TYPE *)malloc(sizeof(FL_TYPE) * w * h); // ray intersections
+    FL_TYPE *illums = (FL_TYPE *)calloc(w * h * num_lights, sizeof(FL_TYPE)); // all illums
+
     FL_TYPE t; // parametric eqn
     FL_TYPE illum;
     FL_TYPE u, v; // barycentric coords
-    FL_TYPE rox, roy, roz, rdx, rdy, rdz;
-    FL_TYPE ax, ay, az, bx, by, bz, cx, cy, cz;
-    FL_TYPE px, py, pz;
+    FL_TYPE rox, roy, roz, rdx, rdy, rdz; // ray vector
+    FL_TYPE ax, ay, az, bx, by, bz, cx, cy, cz; // nodes
+    FL_TYPE px, py, pz; // intersection point
+    FL_TYPE nx, ny, nz; // surface normal
+    FL_TYPE e01x, e01y, e01z, e02x, e02y, e02z;
+    FL_TYPE ray_length_1; // 1/shadow_ray_length
+
     for (size_t _i = 0; _i < w * h * 6; _i+=6)
     {
         rox = rays[_i];
@@ -33,7 +40,7 @@ void render(
     // std::cout << rdx << " " << rdy << " " << rdz << " " << "\n";
 
         FL_TYPE min_dis = 1e10;
-        for (size_t _j = 0; _j < num_elements * 9; _j+=9)
+        for (size_t _j = 0; _j < num_elements * element_size; _j+=element_size)
         {    
             ax = nodes[_j];
             ay = nodes[_j+1];
@@ -46,13 +53,24 @@ void render(
             cx = nodes[_j+6];
             cy = nodes[_j+7];
             cz = nodes[_j+8];
-            // if(_i/6 == 29)
-            // {
-            //     std::cout << "29\n"; 
-            // }
+
+            nx = nodes[_j + 9];
+            ny = nodes[_j + 10];
+            nz = nodes[_j + 11];
+
+            e01x = nodes[_j + 12];
+            e01y = nodes[_j + 13];
+            e01z = nodes[_j + 14];
+            
+            e02x = nodes[_j + 15];
+            e02y = nodes[_j + 16];
+            e02z = nodes[_j + 17];
+            
             if(checkIntersection(
                 rox, roy, roz, rdx, rdy, rdz, ax, ay, az,
-                bx, by, bz, cx, cy, cz, t, illum, u, v
+                bx, by, bz, cx, cy, cz, nx, ny, nz,
+                e01x, e01y, e01z, e02x, e02y, e02z,
+                t, illum, u, v
             ))
             {
                 px = rox + t*rdx;
@@ -64,14 +82,61 @@ void render(
                 );
                 if(dis < min_dis)
                 {
-                    is_hit[_i/6] = _j/9;
+                    is_hit[_i/6] = _j/element_size;
                     ts[_i/6] = t;
                     min_dis = dis;
-                    image_plane[_i/6] = illum;
+                    image_plane[_i/6] = fabs(rdx * nx + rdy * ny + rdz * nz)/20;
                 }
             }
         }
     }
+
+    std::cout << "Primary ray hit complete\n";
+
+    return;
+    // calculate illumination
+    for (size_t _j = 0; _j < w * h * 6; _j+=6)
+    {
+        if(is_hit[_j/6] == -1)
+        {
+            image_plane[_j] = 0.0;
+            continue;
+        }
+        
+        t = ts[_j/6];
+        int eid = is_hit[_j/6];
+        nx = nodes[eid * element_size + 9];
+        ny = nodes[eid * element_size + 10];
+        nz = nodes[eid * element_size + 11];
+
+        rox = rays[_j] + rays[_j+3] * t;
+        roy = rays[_j+1] + rays[_j+4] * t;
+        roz = rays[_j+2] + rays[_j+5] * t;
+        for (size_t _i = 0; _i < num_lights; _i++)
+        {
+            FL_TYPE lx = lights[_i * 3];
+            FL_TYPE ly = lights[_i * 3 + 1];
+            FL_TYPE lz = lights[_i * 3 + 2];
+
+            
+            rdx = lx - rox;
+            rdy = ly - roy;
+            rdz = lz - roz;
+
+            ray_length_1 = 1/sqrt(rdx * rdx + rdy * rdy + rdz * rdz);
+            rdx *= ray_length_1;
+            rdy *= ray_length_1;
+            rdz *= ray_length_1;
+
+            illum = fabs(rdx * nx + rdy * ny + rdz * nz);
+            // illums[_i * w * h + _j/6] = 0.5;
+
+        }        
+    }
+    
+    std::cout << "Done calculating illumination\n";
+
+
     // now do the shadow rays
     // for (size_t _i = 0; _i < h * w; _i++)
     // {
@@ -102,45 +167,72 @@ void render(
         roy = rays[_i+1] + rays[_i+4] * t;
         roz = rays[_i+2] + rays[_i+5] * t;
         
-        // TODO: multiple lights
-        rdx = lights[0] - rox;
-        rdy = lights[1] - roy;
-        rdz = lights[2] - roz;
+        // TODO: multiple lights: done
+        for (size_t _k = 0; _k < num_lights; _k++)
+        {
 
-        // image_plane[_i/6] = 1.0;
-        
-        for (size_t _j = 0; _j < num_elements * 9; _j+=9)
-        {   
-            if(_j / 9 == is_hit[_i / 6]) // stop self hits
-            {
-                continue;
-            }
-            ax = nodes[_j];
-            ay = nodes[_j+1];
-            az = nodes[_j+2];
+            rdx = lights[_k * 3 + 0] - rox;
+            rdy = lights[_k * 3 + 1] - roy;
+            rdz = lights[_k * 3 + 2] - roz;
 
-            bx = nodes[_j+3];
-            by = nodes[_j+4];
-            bz = nodes[_j+5];
-
-            cx = nodes[_j+6];
-            cy = nodes[_j+7];
-            cz = nodes[_j+8];
-            if(checkIntersection(
-                rox, roy, roz, rdx, rdy, rdz, ax, ay, az,
-                bx, by, bz, cx, cy, cz, t, illum, u, v
-            ))
-            {
-                if(t < 0)
+            // image_plane[_i/6] = 1.0;
+            
+            for (size_t _j = 0; _j < num_elements * element_size; _j+=element_size)
+            {   
+                if(_j / element_size == is_hit[_i / 6]) // stop self hits
                 {
-                    image_plane[_i/6] = 0.0;
+                    continue;
                 }
+                ax = nodes[_j];
+                ay = nodes[_j+1];
+                az = nodes[_j+2];
+
+                bx = nodes[_j+3];
+                by = nodes[_j+4];
+                bz = nodes[_j+5];
+
+                cx = nodes[_j+6];
+                cy = nodes[_j+7];
+                cz = nodes[_j+8];
+
+                nx = nodes[_j + 9];
+                ny = nodes[_j + 10];
+                nz = nodes[_j + 11];
+
+                e01x = nodes[_j + 12];
+                e01y = nodes[_j + 13];
+                e01z = nodes[_j + 14];
                 
-                // std::cout << roz << " " << rdz << " " << ax << " " << ay << " " << az << " " << t << " " << u << " " << v <<  "\n";
-                break;
+                e02x = nodes[_j + 15];
+                e02y = nodes[_j + 16];
+                e02z = nodes[_j + 17];
+
+                if(checkIntersection(
+                    rox, roy, roz, rdx, rdy, rdz, ax, ay, az,
+                    bx, by, bz, cx, cy, cz, nx, ny, nz,
+                    e01x, e01y, e01z, e02x, e02y, e02z,
+                    t, illum, u, v
+                ))
+                {
+                    if(t < 0)
+                    {
+                        // image_plane[_i/6] = 0.0;
+                        illums[_k * w * h + _i/6] = 0; // no illuminaiton due to this light
+                        std::cout << "shadowed";
+                    }
+                    
+                    // std::cout << roz << " " << rdz << " " << ax << " " << ay << " " << az << " " << t << " " << u << " " << v <<  "\n";
+                    break;
+                }
             }
         }
     }
+
+    for (size_t _i = 0; _i < w * h * num_lights; _i++)
+    {
+        image_plane[_i % (w*h)] += illums[_i];
+    }
+    
 }
 
 inline bool checkIntersection(
@@ -149,19 +241,23 @@ inline bool checkIntersection(
      FL_TYPE ax, FL_TYPE ay, FL_TYPE az,
      FL_TYPE bx, FL_TYPE by, FL_TYPE bz,
      FL_TYPE cx, FL_TYPE cy, FL_TYPE cz,
+     FL_TYPE nx, FL_TYPE ny, FL_TYPE nz,
+     FL_TYPE e01x, FL_TYPE e01y, FL_TYPE e01z,
+     FL_TYPE e02x, FL_TYPE e02y, FL_TYPE e02z,
      FL_TYPE &t, FL_TYPE &illum, FL_TYPE &u,
      FL_TYPE &v
 )
 {   // calc the edges
-    FL_TYPE e01x = bx - ax;
-    FL_TYPE e01y = by - ay;
-    FL_TYPE e01z = bz - az;
+#ifndef USE_PRECOMPUTED_NORMALS
+    // FL_TYPE e01x = bx - ax;
+    // FL_TYPE e01y = by - ay;
+    // FL_TYPE e01z = bz - az;
 
-    FL_TYPE e02x = cx - ax;
-    FL_TYPE e02y = cy - ay;
-    FL_TYPE e02z = cz - az;
+    // FL_TYPE e02x = cx - ax;
+    // FL_TYPE e02y = cy - ay;
+    // FL_TYPE e02z = cz - az;
 
-    FL_TYPE px, py, pz, nx, ny, nz;
+    FL_TYPE px, py, pz; // _nx, _ny, _nz;
     cross(rdx, rdy, rdz, e02x, e02y, e02z, px, py, pz);
     
     // calculate the triple product
@@ -203,7 +299,7 @@ inline bool checkIntersection(
     t = e02x * qx + e02y * qy + e02z * qz;
     t *= d_1;
     
-    cross(e01x, e01y, e01z, e02x, e02y, e02z, nx, ny, nz);
+    // cross(e01x, e01y, e01z, e02x, e02y, e02z, _nx, _ny, _nz);
     FL_TYPE rdnx, rdny, rdnz, nnx, nny, nnz;
     normalize(rdx, rdy, rdz, rdnx, rdny, rdnz);
     normalize(nx, ny, nz, nnx, nny, nnz);
@@ -213,6 +309,39 @@ inline bool checkIntersection(
     // std::cout <<"normal: " <<  nx << " " << ny << " " << nz << " " << "\n";
     // std::cout << "illum: " << illum << "\n";
     illum = fabs(illum);
+#else
+    FL_TYPE D = - (nx * rdx + ny*rdy + nz*rdz);  // |-d e1 e2| = -n.d
+
+    if(fabs(D) < 1e-6)
+    {
+        return false;
+    }
+
+    FL_TYPE tx = rox - ax;
+    FL_TYPE ty = roy - ay;
+    FL_TYPE tz = roz - az;
+    // FL_TYPE px, py, pz;
+    // cross(rdx, rdy, rdz, e02x, e02y, e02z, px, py, pz);
+
+    FL_TYPE Dy = rdx*(tz*e02y - ty*e02z) + tx*(rdy*e02z - e02y*rdz) + e02x*(ty*rdz - rdy*tz);
+    u = Dy / D;
+
+    if(u < 0 || u > 1)
+    {
+        return false;
+    }
+
+    FL_TYPE Dz = rdx*(e01z*ty - e01y*tz) + e01x*(tz*rdy - ty*rdz) + tx*(e01y*rdz - rdy*e01z);
+
+    v = Dz / D;
+
+    if(v < 0 || v + u > 1)
+    {
+        return false;
+    }
+
+    t = (tx*nx + ty*ny + tz*nz)/D;
+#endif
     return true;
 }
 

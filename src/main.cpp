@@ -31,7 +31,10 @@ int main(int argc, char** argv)
     unsigned int num_of_nodes;
     unsigned int num_of_elements;
     std::string file = "shadow";
+    std::cout << "Parsing GMSH domain \"" << file << "\"\n";
     DomainParser(file,element_vector,num_of_nodes,num_of_elements);
+    std::cout << "Parsing finished\n" << "Elements: " << element_vector.size() / element_size << "\n";
+    
     // create image plane
     // [r g b  r g b ...]
     FL_TYPE *image_plane = \
@@ -57,8 +60,9 @@ int main(int argc, char** argv)
     // FL_TYPE nodes[] = {-2, -2, 2, 2, -2, 2, 2, 2, 2};
 
     FL_TYPE lights[] = {lx, ly, lz};
-    render(rays, nodes, element_vector.size() / 9, lights, 1, image_plane);
+    render(rays, nodes, element_vector.size() / element_size, lights, 1, image_plane);
     // render(rays, nodes, 1, lights, 1, image_plane);
+    
     // for(size_t _i = 0; _i < h; _i++)
     // {
     //     for(size_t _j = 0; _j < w; _j++)
@@ -70,3 +74,6 @@ int main(int argc, char** argv)
 
     RayTrace::writeImage(image_plane, "a.ppm");
 }
+
+
+// TODO: normalize rays and normals

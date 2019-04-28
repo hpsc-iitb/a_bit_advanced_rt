@@ -27,4 +27,8 @@ extern FL_TYPE lx;
 extern FL_TYPE ly;
 extern FL_TYPE lz;
 
+extern size_t element_size; // size of an element in element_vector
+
+#define USE_PRECOMPUTED_NORMALS
+
 #endif

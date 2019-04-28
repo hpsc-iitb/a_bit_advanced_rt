@@ -7,8 +7,8 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/libs)
 set(CMAKE_CXX_STANDARD 11)
 # set(CMAKE_CXX_F)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
-# set(CMAKE_CXX_FLAGS "-Ofast -march=native")
-set(CMAKE_CXX_FLAGS "-pg")
+set(CMAKE_CXX_FLAGS "-Ofast -march=native")
+# set(CMAKE_CXX_FLAGS "-pg")
 
 #Headers
 include_directories(include)
