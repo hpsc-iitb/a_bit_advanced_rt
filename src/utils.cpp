@@ -80,8 +80,7 @@ namespace RayTrace{
 
                 FL_TYPE x_i_0 = _j * dx + xmin; 
                 FL_TYPE y_i_0 = _i * dy + ymin;
-                FL_TYPE z_i_0 = image_plane_camera_distance + cz;
-                // std::cout << x_i_0 << " " << y_i_0 << " " << z_i_0 << " " << "\n";
+                FL_TYPE z_i_0 = image_plane_camera_distance;
 
                 // FL_TYPE z_i_0 = image_plane_camera_distance * cos(pitch)\
                 //     * cos(yaw) + x_i_0 * sin(yaw) + y_i_0 * sin(pitch);
@@ -95,6 +94,9 @@ namespace RayTrace{
                 ray[idx+3] = x_i_0;
                 ray[idx+4] = y_i_0;
                 ray[idx+5] = z_i_0;
+                // std::cout << x_i_0 << " " << y_i_0 << " " << z_i_0 << " " << "\n";
+
+                // std::cout << 
             }
         }
         

@@ -82,7 +82,7 @@ void render(
     // {
     //     for(size_t _j = 0; _j < w; _j++)
     //     {
-    //         std::cout << image_plane[_i * w + _j] << " ";
+    //         std::cout << ts[_i * w + _j] << " ";
     //     }
     //     std::cout << "\n";
     // }
@@ -131,16 +131,26 @@ void render(
                 bx, by, bz, cx, cy, cz, t, illum, u, v
             ))
             {
-                if(t < 0)
+                if(t > 0)
                 {
+                    // std::cout << "hit\n";
                     image_plane[_i/6] = 0.0;
                 }
-                
+                ts[_i/6] = t;
                 // std::cout << roz << " " << rdz << " " << ax << " " << ay << " " << az << " " << t << " " << u << " " << v <<  "\n";
                 break;
             }
         }
     }
+
+    // for(size_t _i = 0; _i < h; _i++)
+    // {
+    //     for(size_t _j = 0; _j < w; _j++)
+    //     {
+    //         std::cout << ts[_i * w + _j] << " ";
+    //     }
+    //     std::cout << "\n";
+    // }
 }
 
 inline bool checkIntersection(
@@ -153,6 +163,9 @@ inline bool checkIntersection(
      FL_TYPE &v
 )
 {   // calc the edges
+
+    // std::cout << rox << " " << roy << " " << roz << " " << "\n";
+
     FL_TYPE e01x = bx - ax;
     FL_TYPE e01y = by - ay;
     FL_TYPE e01z = bz - az;
@@ -202,6 +215,7 @@ inline bool checkIntersection(
 
     t = e02x * qx + e02y * qy + e02z * qz;
     t *= d_1;
+
     
     cross(e01x, e01y, e01z, e02x, e02y, e02z, nx, ny, nz);
     FL_TYPE rdnx, rdny, rdnz, nnx, nny, nnz;
