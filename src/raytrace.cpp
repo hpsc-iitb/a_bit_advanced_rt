@@ -218,13 +218,13 @@ void render(
                     t, illum, u, v, nl
                 ))
                 {
-                    if(t > 0)
-                    {
+                    // if(t > 0)
+                    // {
                         // image_plane[_i/6] = 0.0;
                         illums[_k * w * h + _i/6] = 0; // no illuminaiton due to this light
                         // std::cout << "shadowed";
                         break;
-                    }
+                    // }
                     // std::cout << roz << " " << rdz << " " << ax << " " << ay << " " << az << " " << t << " " << u << " " << v <<  "\n";
                 }
             }
@@ -344,6 +344,11 @@ inline bool checkIntersection(
     }
 
     t = (tx*nx + ty*ny + tz*nz)*nl/D;
+
+    if(t < 0)
+    {
+        return false;
+    }
 
     // normalize(rdx, rdy, rdz, rdx, rdy, rdz);
     // illum = fabs(rdx * nx + rdy * ny + rdz * nz);

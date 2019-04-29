@@ -9,6 +9,8 @@
 #include <raytrace.hpp>
 #include <domainparser.hpp>
 
+#include <chrono>
+
 #ifdef COLOR
     const size_t channels = 3; // rgb
 #else
@@ -24,9 +26,6 @@ int main(int argc, char** argv)
     camera[1] = 30;
     camera[2] = 60;
 
-    // lx = -lx;
-    // ly = -ly;
-    // lz = -lz;
     std::vector <FL_TYPE> element_vector;
     unsigned int num_of_nodes;
     unsigned int num_of_elements;
@@ -54,26 +53,16 @@ int main(int argc, char** argv)
     RayTrace::updateRays(camera, rays);
 
     FL_TYPE *nodes = &element_vector[0];
-    // FL_TYPE nodes[] = {-3.5, -2, -2, 0.5, -2, -3, 0.5, 2, -3.1, 
-                        // -1, -1.5, -2.5, 3, -1.5, -3.2, 3, 2.5, -2.4 };  
-    
-    // FL_TYPE nodes[] = {-2, -2, 2, 2, -2, 2, 2, 2, 2};
-
+  
     FL_TYPE lights[] = {lx, ly, lz};
+    auto start_time = std::chrono::high_resolution_clock::now();
     render(rays, nodes, element_vector.size() / element_size, lights, 1, image_plane);
-    // render(rays, nodes, 1, lights, 1, image_plane);
-    
-    // for(size_t _i = 0; _i < h; _i++)
-    // {
-    //     for(size_t _j = 0; _j < w; _j++)
-    //     {
-    //         std::cout << image_plane[_i * w + _j] << " ";
-    //     }
-    //     std::cout << "\n";
-    // }
+    auto end_time = std::chrono::high_resolution_clock::now();
+    double time_spent = std::chrono::duration<double, std::milli>(end_time - start_time).count();
+    std::cout << "Render time taken: " << time_spent << "ms\n";
 
     RayTrace::writeImage(image_plane, "a.ppm");
 }
 
 
-// TODO: normalize rays and normals
+// TODO: normalize rays
