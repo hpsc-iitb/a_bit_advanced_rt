@@ -3,11 +3,13 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 
 #include <flags.hpp>
 #include <utils.hpp>
 #include <raytrace.hpp>
 #include <domainparser.hpp>
+#include <tree.hpp>
 
 #include <chrono>
 
@@ -18,7 +20,7 @@
 #endif
 
 std::vector<FL_TYPE> camera(3, 0);
-
+std::vector<FL_TYPE> domain_limits(6, 0);
 
 int main(int argc, char** argv)
 {
@@ -31,9 +33,26 @@ int main(int argc, char** argv)
     unsigned int num_of_elements;
     std::string file = "shadow";
     std::cout << "Parsing GMSH domain \"" << file << "\"\n";
-    DomainParser(file,element_vector,num_of_nodes,num_of_elements);
+    DomainParser(file,element_vector,num_of_nodes,num_of_elements, domain_limits);
     std::cout << "Parsing finished\n" << "Elements: " << element_vector.size() / element_size << "\n";
+    std::cout << "Domain limits: [" << domain_limits[0] << ", "\
+        << domain_limits[1] << ", "\
+        << domain_limits[2] << "], ["\
+        << domain_limits[3] << ", "\
+        << domain_limits[4] << ", "\
+        << domain_limits[5] << "]\n";
     
+    FL_TYPE max_length = std::max(
+        fabs(domain_limits[0] - domain_limits[3]),
+        std::max(
+            fabs(domain_limits[1] - domain_limits[4]),
+            fabs(domain_limits[2] - domain_limits[5])
+        )
+    );
+
+    Node::node_count = 0;
+    Node root(domain_limits[0], domain_limits[4], domain_limits[2], max_length, 2);
+
     // create image plane
     // [r g b  r g b ...]
     FL_TYPE *image_plane = \

@@ -2,6 +2,7 @@
 #include <raytrace.hpp>
 #include <iostream>
 #include <cmath>
+#include <chrono>
 
 
 void render(
@@ -28,6 +29,10 @@ void render(
     FL_TYPE e01x, e01y, e01z, e02x, e02y, e02z;
     FL_TYPE ray_length_1; // 1/shadow_ray_length
 
+    size_t ray_calcs = 0, ray_hits = 0;
+
+    auto render_start_time = std::chrono::high_resolution_clock::now();
+
     for (size_t _i = 0; _i < w * h * 6; _i+=6)
     {
         rox = rays[_i];
@@ -42,6 +47,7 @@ void render(
         FL_TYPE min_dis = 1e10;
         for (size_t _j = 0; _j < num_elements * element_size; _j+=element_size)
         {    
+            ray_calcs++;
             ax = nodes[_j];
             ay = nodes[_j+1];
             az = nodes[_j+2];
@@ -75,6 +81,7 @@ void render(
                 t, illum, u, v, nl
             ))
             {
+                ray_hits++;
                 px = rox + t*rdx;
                 py = roy + t*rdy;
                 pz = roz + t*rdz;
@@ -92,9 +99,11 @@ void render(
             }
         }
     }
+    auto primary_end_time = std::chrono::high_resolution_clock::now();
 
     std::cout << "Primary ray hit complete\n";
-
+    std::cout << "Ray calcs: " << ray_calcs\
+    << "\nRay hits: " << ray_hits << "\n";
     // return;
     // calculate illumination
     for (size_t _j = 0; _j < w * h * 6; _j+=6)
@@ -135,7 +144,8 @@ void render(
 
         }        
     }
-    
+
+    auto illum_end_time = std::chrono::high_resolution_clock::now();    
     std::cout << "Done calculating illumination\n";
     // return;
 
@@ -154,7 +164,8 @@ void render(
     //     std::cout << "\n";
     // }
 
-
+    ray_calcs = 0;
+    ray_hits = 0;
     for (size_t _i = 0; _i < w * h * 6; _i+=6)
     {
         if (is_hit[_i/6] == -1)
@@ -185,6 +196,7 @@ void render(
                 {
                     continue;
                 }
+                ray_calcs++;
                 ax = nodes[_j];
                 ay = nodes[_j+1];
                 az = nodes[_j+2];
@@ -218,24 +230,34 @@ void render(
                     t, illum, u, v, nl
                 ))
                 {
-                    // if(t > 0)
-                    // {
-                        // image_plane[_i/6] = 0.0;
-                        illums[_k * w * h + _i/6] = 0; // no illuminaiton due to this light
-                        // std::cout << "shadowed";
-                        break;
-                    // }
-                    // std::cout << roz << " " << rdz << " " << ax << " " << ay << " " << az << " " << t << " " << u << " " << v <<  "\n";
+                    ray_hits++;
+                    illums[_k * w * h + _i/6] = 0; // no illuminaiton due to this light
+                    break;
                 }
             }
         }
     }
-
+    auto shadow_end_time = std::chrono::high_resolution_clock::now();    
+    
+    std::cout << "Ray calcs: " << ray_calcs\
+    << "\nRay hits: " << ray_hits << "\n";
+    
     for (size_t _i = 0; _i < w * h * num_lights; _i++)
     {
         image_plane[_i % (w*h)] += illums[_i];
     }
     
+    double t1 = std::chrono::duration<double, std::milli>(
+        primary_end_time - render_start_time).count();
+    double t2 = std::chrono::duration<double, std::milli>(
+        illum_end_time-primary_end_time).count();
+    double t3 = std::chrono::duration<double, std::milli>(
+        shadow_end_time - illum_end_time).count();
+
+
+    std::cout << "Primary rays time(ms): " << t1\
+    << "\nIllumination calculation time(ms): " << t2\
+    << "\nShadow rays time(ms): " << t3 << "\n";
 }
 
 inline bool checkIntersection(
@@ -252,13 +274,13 @@ inline bool checkIntersection(
 )
 {   // calc the edges
 #ifndef USE_PRECOMPUTED_NORMALS
-    // FL_TYPE e01x = bx - ax;
-    // FL_TYPE e01y = by - ay;
-    // FL_TYPE e01z = bz - az;
+    e01x = bx - ax;
+    e01y = by - ay;
+    e01z = bz - az;
 
-    // FL_TYPE e02x = cx - ax;
-    // FL_TYPE e02y = cy - ay;
-    // FL_TYPE e02z = cz - az;
+    e02x = cx - ax;
+    e02y = cy - ay;
+    e02z = cz - az;
 
     FL_TYPE px, py, pz; // _nx, _ny, _nz;
     cross(rdx, rdy, rdz, e02x, e02y, e02z, px, py, pz);
@@ -301,8 +323,13 @@ inline bool checkIntersection(
 
     t = e02x * qx + e02y * qy + e02z * qz;
     t *= d_1;
-    
-    // cross(e01x, e01y, e01z, e02x, e02y, e02z, _nx, _ny, _nz);
+
+    if(t < 0)
+    {
+        return false;
+    }
+
+    cross(e01x, e01y, e01z, e02x, e02y, e02z, nx, ny, nz);
     FL_TYPE rdnx, rdny, rdnz, nnx, nny, nnz;
     normalize(rdx, rdy, rdz, rdnx, rdny, rdnz);
     normalize(nx, ny, nz, nnx, nny, nnz);

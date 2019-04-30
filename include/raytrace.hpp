@@ -1,6 +1,7 @@
 #ifndef RAYTRACE_HPP
 #define RAYTRACE_HPP
 #include <flags.hpp>
+#include <chrono>
 
 void render(
     FL_TYPE *rays, FL_TYPE *nodes, size_t num_elements,
