@@ -17,7 +17,8 @@ class Node
     bool rayIntersection(
         FL_TYPE rox, FL_TYPE roy, FL_TYPE roz,
         FL_TYPE rdx, FL_TYPE rdy, FL_TYPE rdz,
-        size_t *intersecting_nodes, int &idx
+        size_t *intersecting_nodes, int &idx,
+        bool normalized = false
     );
     
     std::vector<Node *> subnodes;
@@ -25,6 +26,7 @@ class Node
     size_t node_id;
     std::vector<size_t> elements;
     bool is_leaf;
+    size_t num_all_contained_elements;
 
     static size_t node_count;
     static std::vector<Node *> all_nodes;

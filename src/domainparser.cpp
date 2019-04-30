@@ -23,12 +23,11 @@ std::vector<std::string> split(const std::string& s)
 }
 
 void DomainParser(
-    std::string file_name, std::vector <double> &element_vector,
-    unsigned int num_of_nodes, unsigned int num_of_elements,
+    std::string file_name, std::vector <FL_TYPE> &element_vector,
     std::vector<FL_TYPE> &domain
     )
 {
-    unsigned int counter = 1;
+    unsigned int counter = 1, num_of_nodes = 0, num_of_elements = 0;
     unsigned int counter1 = 0;
     unsigned int n_count;
     unsigned int e_count;
@@ -159,6 +158,7 @@ void DomainParser(
         }
         counter++;
     }
+
     num_of_elements = counter1;
     element_vector.resize(num_of_elements*element_size);
     infile.close();

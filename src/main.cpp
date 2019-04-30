@@ -33,7 +33,8 @@ int main(int argc, char** argv)
     unsigned int num_of_elements;
     std::string file = "shadow";
     std::cout << "Parsing GMSH domain \"" << file << "\"\n";
-    DomainParser(file,element_vector,num_of_nodes,num_of_elements, domain_limits);
+    DomainParser(file,element_vector, domain_limits);
+
     std::cout << "Parsing finished\n" << "Elements: " << element_vector.size() / element_size << "\n";
     std::cout << "Domain limits: [" << domain_limits[0] << ", "\
         << domain_limits[1] << ", "\
@@ -49,22 +50,19 @@ int main(int argc, char** argv)
             fabs(domain_limits[2] - domain_limits[5])
         )
     );
-
+    
     std::cout << "Domain max length: " << max_length << "\n";
 
     Node::node_count = 0;
-    Node root(domain_limits[0], domain_limits[4], domain_limits[2], max_length, 2);
-    // Node root(10, 10, 10, 10, 4);
-    // size_t *nodes_hit = (size_t *)calloc(Node::node_count, sizeof(size_t));
-    // int idx = 0;
-    std::cout << "Octree nodes: " << Node::node_count << "\n";
-    // root.rayIntersection(16, 6, 25, 0, 0, -1, nodes_hit, idx);
-    // for(size_t _k = 0; _k < Node::node_count; _k++)
-    // {
-    //     std::cout << nodes_hit[_k] << "\n";
-    //     // std::cout << Node::all_nodes[_k]->numElementsInside() << "\n";
-    // }
-    
+    Node root(
+        domain_limits[0] - fabs(max_length*(1-tree_minus_tol)),
+        domain_limits[4] + fabs(max_length*(1-tree_plus_tol)),
+        domain_limits[2] - fabs(max_length*(1-tree_minus_tol)),
+        max_length*tree_plus_tol/tree_minus_tol,
+        2);
+        
+    std::cout << "Octree nodes: " << Node::node_count << " \n";
+
 
     // create image plane
     // [r g b  r g b ...]
@@ -85,6 +83,10 @@ int main(int argc, char** argv)
     RayTrace::updateRays(camera, rays);
 
     FL_TYPE *nodes = &element_vector[0];
+    
+    fillTree(nodes, element_vector.size() / element_size);
+    root.numElementsInside();
+    std::cout<< "tree has: " << root.numElementsInside() << " elements\n";
   
     FL_TYPE lights[] = {lx, ly, lz};
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -94,6 +96,8 @@ int main(int argc, char** argv)
     std::cout << "Render time taken: " << time_spent << "ms\n";
 
     RayTrace::writeImage(image_plane, "a.ppm");
+    free(image_plane);
+    free(rays);
 }
 
 

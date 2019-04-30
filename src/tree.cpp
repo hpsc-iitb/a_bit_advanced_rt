@@ -21,9 +21,8 @@ Node::Node(
     }
     else
     {
-        this->is_leaf = false;        /* code */
+        this->is_leaf = false;
     }
-    
     this->node_id = Node::node_count;
     Node::node_count++;
     Node::all_nodes.push_back(this);
@@ -42,10 +41,8 @@ Node::Node(
 //             << az <<\
             ", length: " << cur_l << "\n";
    this->vertices.resize(24, 0);
+   this->num_all_contained_elements = 0;
 
-//    this->vertices[0] = ax;
-//    this->vertices[1] = ay;
-//    this->vertices[2] = az;
     for(size_t _i = 0; _i < this->vertices.size()/3; _i++)
     {
         this->vertices[_i*3 + 0] = ax + (_i%2)*cur_l;
@@ -67,24 +64,28 @@ size_t Node::numElementsInside()
 {
     if(this->is_leaf)
     {
-        return this->elements.size();
+        this->num_all_contained_elements = this->elements.size();
     }
-
-    size_t num_all_elem = 0;
-    for(size_t _i = 0; _i < this->subnodes.size(); _i++)
+    else
     {
-        num_all_elem += this->subnodes[_i]->elements.size();
+        size_t num_all_elem = 0;
+        for(size_t _i = 0; _i < this->subnodes.size(); _i++)
+        {
+            num_all_elem += this->subnodes[_i]->numElementsInside();
+        }
+        this->num_all_contained_elements = num_all_elem;
     }
-    return num_all_elem;
+    return this->num_all_contained_elements;
 }
 
 bool Node::rayIntersection(
     FL_TYPE rox, FL_TYPE roy, FL_TYPE roz,
     FL_TYPE rdx, FL_TYPE rdy, FL_TYPE rdz,
-    size_t *intersecting_nodes, int &idx
+    size_t *intersecting_nodes, int &idx,
+    bool normalized
 )
 {
-    if(this->numElementsInside() == 0)
+    if(this->num_all_contained_elements == 0)
     {
         // node doesn't have any element inside, no intersections
         return false;
@@ -92,10 +93,13 @@ bool Node::rayIntersection(
 
     // TODO: optimize this normalization
     // normalize();
-    normalize(rdx, rdy, rdz, rdx, rdy, rdz);
     rdx = (!rdx)?1e-8:rdx;
     rdy = (!rdy)?1e-8:rdy;
     rdz = (!rdz)?1e-8:rdz;
+    if(!normalized)
+    {
+        normalize(rdx, rdy, rdz, rdx, rdy, rdz);
+    }
     
     FL_TYPE swap_tmp;
 
@@ -151,9 +155,9 @@ bool Node::rayIntersection(
             bool retval = false;
             for(size_t _k = 0; _k < this->subnodes.size(); _k++)
             {
-                // std::cout << "in rayintersection loop, processing: " << _k << "\n";
                 retval = retval | this->subnodes[_k]->rayIntersection(
-                    rox, roy, roz, rdx, rdy, rdz, intersecting_nodes, idx
+                    rox, roy, roz, rdx, rdy, rdz, intersecting_nodes, idx,
+                    true
                 );
             }
             return retval;
@@ -171,5 +175,39 @@ std::vector<Node *> Node::all_nodes(0);
 
 void fillTree(FL_TYPE *element_nodes, size_t num_elements)
 {
-    
+    FL_TYPE xmax, xmin, ymax, ymin, zmax, zmin;
+    size_t eid;
+    for (size_t _i = 0; _i < Node::node_count; _i++)
+    {
+        Node *n = Node::all_nodes.at(_i);
+        // don't store if not leaf
+        if(n->is_leaf)
+        {
+            xmax = n->vertices[3]; // b
+            xmin = n->vertices[0]; // a
+            ymax = n->vertices[1]; // a
+            ymin = n->vertices[7]; // c
+            zmax = n->vertices[14]; // e
+            zmin = n->vertices[2]; // e
+            for (size_t _j = 0; _j < num_elements; _j++)
+            {
+                eid = _j * element_size;
+                if(
+                    (element_nodes[eid] <= xmax && element_nodes[eid] >= xmin\
+                        && element_nodes[eid+1] <= ymax && element_nodes[eid+1] >= ymin\
+                        && element_nodes[eid+2] <= zmax && element_nodes[eid+2] >= zmin) ||
+                        (element_nodes[eid+3] <= xmax && element_nodes[eid+3] >= xmin\
+                        && element_nodes[eid+4] <= ymax && element_nodes[eid+4] >= ymin\
+                        && element_nodes[eid+5] <= zmax && element_nodes[eid+5] >= zmin) ||
+                        (element_nodes[eid+6] <= xmax && element_nodes[eid+6] >= xmin\
+                        && element_nodes[eid+7] <= ymax && element_nodes[eid+7] >= ymin\
+                        && element_nodes[eid+8] <= zmax && element_nodes[eid+8] >= zmin)
+                )
+                {
+                    n->elements.push_back(_j);
+                }
+            }
+            
+        }
+    }
 }

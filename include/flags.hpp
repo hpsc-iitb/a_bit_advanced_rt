@@ -29,6 +29,10 @@ extern FL_TYPE lz;
 
 extern size_t element_size; // size of an element in element_vector
 
+// tree tolerances
+extern FL_TYPE tree_plus_tol;
+extern FL_TYPE tree_minus_tol;
+
 #define USE_PRECOMPUTED_NORMALS
 
 #endif
