@@ -50,8 +50,21 @@ int main(int argc, char** argv)
         )
     );
 
+    std::cout << "Domain max length: " << max_length << "\n";
+
     Node::node_count = 0;
     Node root(domain_limits[0], domain_limits[4], domain_limits[2], max_length, 2);
+    // Node root(10, 10, 10, 10, 4);
+    // size_t *nodes_hit = (size_t *)calloc(Node::node_count, sizeof(size_t));
+    // int idx = 0;
+    std::cout << "Octree nodes: " << Node::node_count << "\n";
+    // root.rayIntersection(16, 6, 25, 0, 0, -1, nodes_hit, idx);
+    // for(size_t _k = 0; _k < Node::node_count; _k++)
+    // {
+    //     std::cout << nodes_hit[_k] << "\n";
+    //     // std::cout << Node::all_nodes[_k]->numElementsInside() << "\n";
+    // }
+    
 
     // create image plane
     // [r g b  r g b ...]
@@ -75,7 +88,7 @@ int main(int argc, char** argv)
   
     FL_TYPE lights[] = {lx, ly, lz};
     auto start_time = std::chrono::high_resolution_clock::now();
-    render(rays, nodes, element_vector.size() / element_size, lights, 1, image_plane);
+    render(rays, nodes, element_vector.size() / element_size, lights, 1, image_plane, root);
     auto end_time = std::chrono::high_resolution_clock::now();
     double time_spent = std::chrono::duration<double, std::milli>(end_time - start_time).count();
     std::cout << "Render time taken: " << time_spent << "ms\n";

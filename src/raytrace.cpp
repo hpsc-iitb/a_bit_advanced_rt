@@ -3,11 +3,13 @@
 #include <iostream>
 #include <cmath>
 #include <chrono>
+#include <tree.hpp>
 
 
 void render(
     FL_TYPE *rays, FL_TYPE *nodes, size_t num_elements,
-    FL_TYPE *lights, size_t num_lights, FL_TYPE *image_plane
+    FL_TYPE *lights, size_t num_lights, FL_TYPE *image_plane,
+    Node &root
 )
 {
     size_t *is_hit = (size_t  *)malloc(sizeof(size_t) * w * h); // ray hit
@@ -32,9 +34,12 @@ void render(
     size_t ray_calcs = 0, ray_hits = 0;
 
     auto render_start_time = std::chrono::high_resolution_clock::now();
-
+    size_t sum_idx = 0;
     for (size_t _i = 0; _i < w * h * 6; _i+=6)
     {
+        size_t *nodes_hit = (size_t *)calloc(Node::node_count, sizeof(size_t));
+        int idx = 0;
+
         rox = rays[_i];
         roy = rays[_i+1];
         roz = rays[_i+2];
@@ -43,7 +48,8 @@ void render(
         rdy = rays[_i+4];
         rdz = rays[_i+5];
     // std::cout << rdx << " " << rdy << " " << rdz << " " << "\n";
-
+        root.rayIntersection(rox, roy, roz, rdx, rdy, rdz, nodes_hit, idx);
+        sum_idx += idx;
         FL_TYPE min_dis = 1e10;
         for (size_t _j = 0; _j < num_elements * element_size; _j+=element_size)
         {    
@@ -258,6 +264,8 @@ void render(
     std::cout << "Primary rays time(ms): " << t1\
     << "\nIllumination calculation time(ms): " << t2\
     << "\nShadow rays time(ms): " << t3 << "\n";
+
+    std::cout << "\n Octree leafs total hit: " << sum_idx << "\n";
 }
 
 inline bool checkIntersection(
@@ -404,15 +412,4 @@ inline FL_TYPE distance(
     return sqrt(
         (bx - ax) * (bx - ax) + (by - ay) * (by - ay) + (bz - az) * (bz - az)
     );
-}
-
-inline void normalize(
-    FL_TYPE &x, FL_TYPE &y, FL_TYPE &z,
-    FL_TYPE &nx, FL_TYPE &ny, FL_TYPE &nz
-)
-{
-    FL_TYPE l = sqrt(x * x + y * y + z * z);
-    nx = x / l;
-    ny = y / l;
-    nz = z / l;
 }

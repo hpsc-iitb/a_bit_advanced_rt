@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <cstdint>
 #include <cmath>
+#include <iostream>
 
 #include "flags.hpp"
 
@@ -23,4 +24,11 @@ namespace RayTrace{
     void updateRays(std::vector<FL_TYPE> &camera, FL_TYPE *ray);
 
 }
+
+
+void normalize(
+    FL_TYPE &x, FL_TYPE &y, FL_TYPE &z,
+    FL_TYPE &nx, FL_TYPE &ny, FL_TYPE &nz
+);
+
 #endif
