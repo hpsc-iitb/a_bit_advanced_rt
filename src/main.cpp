@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <algorithm>
+#include <chrono>
 
 #include <flags.hpp>
 #include <utils.hpp>
@@ -11,7 +12,11 @@
 #include <domainparser.hpp>
 #include <tree.hpp>
 
-#include <chrono>
+
+#include <SFML/Window.hpp>
+#include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
+
 
 #ifdef COLOR
     const size_t channels = 3; // rgb
@@ -50,7 +55,8 @@ int main(int argc, char** argv)
             fabs(domain_limits[2] - domain_limits[5])
         )
     );
-    
+
+            
     std::cout << "Domain max length: " << max_length << "\n";
 
     Node::node_count = 0;
@@ -66,12 +72,6 @@ int main(int argc, char** argv)
 
     // create image plane
     // [r g b  r g b ...]
-    FL_TYPE *image_plane = \
-        (FL_TYPE *)calloc(w * h * channels, sizeof(FL_TYPE));
-    if(!image_plane)
-    {
-        throw std::runtime_error("can't allocate memory for image plane");
-    }
     // create the rays
     // will be updated by void RayTrace::updateRays
     // [origin direction   origin direction...]
@@ -80,7 +80,6 @@ int main(int argc, char** argv)
     {
         throw std::runtime_error("can't allocate memory for rays");
     }
-    RayTrace::updateRays(camera, rays);
 
     FL_TYPE *nodes = &element_vector[0];
     
@@ -89,14 +88,80 @@ int main(int argc, char** argv)
     std::cout<< "tree has: " << root.numElementsInside() << " elements\n";
   
     FL_TYPE lights[] = {lx, ly, lz};
-    auto start_time = std::chrono::high_resolution_clock::now();
-    render(rays, nodes, element_vector.size() / element_size, lights, 1, image_plane, root);
-    auto end_time = std::chrono::high_resolution_clock::now();
-    double time_spent = std::chrono::duration<double, std::milli>(end_time - start_time).count();
-    std::cout << "Render time taken: " << time_spent << "ms\n";
+    
 
-    RayTrace::writeImage(image_plane, "a.ppm");
-    free(image_plane);
+    sf::RenderWindow window(sf::VideoMode(w, h), "Render");    
+    
+    sf::Uint8 *sf_pixbuf = new sf::Uint8[w*h*4]; // rgba
+
+    while(window.isOpen())
+    {
+        FL_TYPE *image_plane = \
+        (FL_TYPE *)calloc(w * h * channels, sizeof(FL_TYPE));
+        if(!image_plane)
+        {
+            throw std::runtime_error("can't allocate memory for image plane");
+        }
+
+        auto start_time = std::chrono::high_resolution_clock::now();
+        sf::Texture texture;
+        texture.create(w, h);
+        sf::Sprite sprite(texture);
+
+        sf::Event event;
+        while(window.pollEvent(event))
+        {
+            if(event.type == sf::Event::Closed)
+            {
+                window.close();
+            }
+            if(event.type == sf::Event::KeyReleased)
+            {
+                if(event.key.code == sf::Keyboard::Up)
+                {
+                    camera[2] += 5;
+                }
+                else if(event.key.code == sf::Keyboard::Down)
+                {
+                    camera[2] -= 5;
+                }
+                if(event.key.code == sf::Keyboard::Left)
+                {
+                    camera[0] -= 0.5;
+                }
+                else if(event.key.code == sf::Keyboard::Right)
+                {
+                    camera[0] += 0.5;
+                }
+
+            }
+            // sf::Image image()
+        }
+
+        RayTrace::updateRays(camera, rays);
+        render(rays, nodes, element_vector.size() / element_size, lights, 1, image_plane, root);
+        
+        for(size_t _i = 0; _i < w*h; _i++)
+        {
+            FL_TYPE pp = image_plane[_i];
+            pp = (pp > 1.0)?1.0:pp;
+            pp = (pp < 0.0)?0.0:pp;
+            sf_pixbuf[_i * 4] = sf::Uint8(pp * 255);
+            sf_pixbuf[_i * 4 + 1] = sf::Uint8(pp * 255);
+            sf_pixbuf[_i * 4 + 2] = sf::Uint8(pp * 255);
+            sf_pixbuf[_i * 4 + 3] = (uint8_t) 255;
+        }
+        texture.update(sf_pixbuf);
+        window.draw(sprite);
+        window.display();
+
+        auto end_time = std::chrono::high_resolution_clock::now();
+        double time_spent = std::chrono::duration<double, std::milli>(end_time - start_time).count();
+        std::cout << "Render time taken: " << time_spent << "ms\n";
+        free(image_plane);
+    }
+
+    // RayTrace::writeImage(image_plane, "a.ppm");
     free(rays);
 }
 

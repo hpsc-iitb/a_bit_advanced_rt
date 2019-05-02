@@ -16,6 +16,7 @@ include_directories(include)
 #Sources
 # AUX_SOURCE_DIRECTORY(src/ ALL_SOURCES)
 set(SOURCES src/main.cpp src/utils.cpp src/flags.cpp src/domainparser.cpp src/raytrace.cpp src/tree.cpp)
+set(SFML_DIR "${CMAKE_SOURCE_DIR}/SFML/lib/cmake/SFML")
 
 set(EXEC_NAME raytrace)
 
@@ -29,13 +30,16 @@ set(EXEC_NAME raytrace)
 # endif()
 
 
-# find_package(SFML 2.5 COMPONENTS graphics window system)
-# if(SFML_FOUND)
-#   include_directories(${SFML_INCLUDE_DIR})
-# endif()
+find_package(SFML 2.5 COMPONENTS graphics window system)
+if(SFML_FOUND)
+  include_directories(${SFML_INCLUDE_DIR})
+endif()
 
 # if(SFML_FOUND AND OpenCL_FOUND)
 #   add_executable(${EXEC_NAME} ${ALL_SOURCES})
 #   target_link_libraries(${EXEC_NAME} sfml-window sfml-graphics sfml-system ${OpenCL_LIBRARIES})
 # endif()
-add_executable(${EXEC_NAME} ${SOURCES})
+if(SFML_FOUND)
+    add_executable(${EXEC_NAME} ${SOURCES})
+    target_link_libraries(${EXEC_NAME} sfml-window sfml-graphics sfml-system)
+endif()

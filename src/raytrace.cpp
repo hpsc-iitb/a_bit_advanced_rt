@@ -102,6 +102,7 @@ void render(
                 }   
             }
         }
+        free(nodes_hit);
     }
     auto primary_end_time = std::chrono::high_resolution_clock::now();
 
@@ -248,6 +249,7 @@ void render(
                     }
                 }
             }
+            free(nodes_hit);
         }
     }
 
@@ -274,6 +276,9 @@ void render(
     << "\nShadow rays time(ms): " << t3 << "\n";
 
     std::cout << "\n Octree leafs total hit: " << sum_idx << "\n";
+    free(illums);
+    free(ts);
+    free(is_hit);
 }
 
 inline bool checkIntersection(
