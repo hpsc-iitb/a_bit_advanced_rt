@@ -8,6 +8,8 @@
 #include <utils.hpp>
 #include <raytrace.hpp>
 #include <domainparser.hpp>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 
 #include <chrono>
 
@@ -27,8 +29,8 @@ int main(int argc, char** argv)
     camera[2] = 60;
 
     std::vector <FL_TYPE> element_vector;
-    unsigned int num_of_nodes;
-    unsigned int num_of_elements;
+    unsigned int num_of_nodes = 0;
+    unsigned int num_of_elements = 0;
     std::string file = "shadow";
     std::cout << "Parsing GMSH domain \"" << file << "\"\n";
     DomainParser(file,element_vector,num_of_nodes,num_of_elements);
@@ -52,7 +54,13 @@ int main(int argc, char** argv)
     }
     RayTrace::updateRays(camera, rays);
 
-    FL_TYPE *nodes = &element_vector[0];
+    FL_TYPE *nodes = &element_vector[0u];
+
+    FL_TYPE *dray, *delems, *dts;
+
+    cudaMalloc((void **)&dray,6*h*w*sizeof(FL_TYPE));
+    cudaMalloc((void **)&delems,element_vector.size()*sizeof(FL_TYPE));
+    cudaMalloc((void **)&dts,h*w*sizeof(FL_TYPE));
   
     FL_TYPE lights[] = {lx, ly, lz};
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -60,8 +68,9 @@ int main(int argc, char** argv)
     auto end_time = std::chrono::high_resolution_clock::now();
     double time_spent = std::chrono::duration<double, std::milli>(end_time - start_time).count();
     std::cout << "Render time taken: " << time_spent << "ms\n";
-
+    
     RayTrace::writeImage(image_plane, "a.ppm");
+
 }
 
 

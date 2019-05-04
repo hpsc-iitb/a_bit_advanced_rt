@@ -7,7 +7,7 @@ set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/libs)
 set(CMAKE_CXX_STANDARD 11)
 # set(CMAKE_CXX_F)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
-# set(CMAKE_CXX_FLAGS "-Ofast -march=native -ffast-math")
+set(CMAKE_CXX_FLAGS "-Ofast -march=native -ffast-math")
 # set(CMAKE_CXX_FLAGS "-pg")
 
 #Headers
@@ -15,7 +15,8 @@ include_directories(include)
 
 #Sources
 # AUX_SOURCE_DIRECTORY(src/ ALL_SOURCES)
-set(SOURCES src/main.cpp src/utils.cpp src/flags.cpp src/domainparser.cpp src/raytrace.cpp)
+# set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=10")
+set(SOURCES src/main.cu src/utils.cpp src/flags.cpp src/domainparser.cpp src/raytrace.cpp)
 
 set(EXEC_NAME raytrace)
 
@@ -38,4 +39,8 @@ set(EXEC_NAME raytrace)
 #   add_executable(${EXEC_NAME} ${ALL_SOURCES})
 #   target_link_libraries(${EXEC_NAME} sfml-window sfml-graphics sfml-system ${OpenCL_LIBRARIES})
 # endif()
-add_executable(${EXEC_NAME} ${SOURCES})
+
+find_package(CUDA REQUIRED)
+cuda_add_executable(${EXEC_NAME} ${SOURCES} OPTIONS -maxrregcount=32)
+set_target_properties( ${EXEC_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(${EXEC_NAME} ${CUDA_LIBRARIES})

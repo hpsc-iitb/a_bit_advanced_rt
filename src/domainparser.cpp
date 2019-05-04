@@ -21,13 +21,13 @@ std::vector<std::string> split(const std::string& s)
    return tokens;
 }
 
-void DomainParser(std::string file_name,std::vector <double> &element_vector,unsigned int num_of_nodes,unsigned int num_of_elements)
+void DomainParser(std::string file_name,std::vector <FL_TYPE> &element_vector,unsigned int num_of_nodes,unsigned int num_of_elements)
 {
     unsigned int counter = 1;
     unsigned int counter1 = 0;
     unsigned int n_count;
     unsigned int e_count;
-    std::vector <double> node_vector;
+    std::vector <FL_TYPE> node_vector;
     int ia1,ia2,ia3;
     std::string line;
     std::ifstream infile; 
@@ -81,34 +81,34 @@ void DomainParser(std::string file_name,std::vector <double> &element_vector,uns
                 element_vector[e_count+7] = cy = node_vector[ia3+1];
                 element_vector[e_count+8] = cz = node_vector[ia3+2];
                 
-                // get the edges
-                e01x = bx - ax;
-                e01y = by - ay;
-                e01z = bz - az;
+                // // get the edges
+                // e01x = bx - ax;
+                // e01y = by - ay;
+                // e01z = bz - az;
                 
-                e02x = cx - ax;
-                e02y = cy - ay;
-                e02z = cz - az;
+                // e02x = cx - ax;
+                // e02y = cy - ay;
+                // e02z = cz - az;
                 
-                // calculate the surface normal
-                nx = e01y * e02z - e01z * e02y;
-                ny = e01z * e02x - e01x * e02z;
-                nz = e01x * e02y - e01y * e02x;
+                // // calculate the surface normal
+                // nx = e01y * e02z - e01z * e02y;
+                // ny = e01z * e02x - e01x * e02z;
+                // nz = e01x * e02y - e01y * e02x;
 
-                normal_length = sqrt(nx * nx + ny * ny + nz * nz);
+                // normal_length = sqrt(nx * nx + ny * ny + nz * nz);
 
-                element_vector[e_count+9] = nx/normal_length;
-                element_vector[e_count+10] = ny/normal_length;
-                element_vector[e_count+11] = nz/normal_length;
+                // element_vector[e_count+9] = nx/normal_length;
+                // element_vector[e_count+10] = ny/normal_length;
+                // element_vector[e_count+11] = nz/normal_length;
 
-                element_vector[e_count+12] = e01x;
-                element_vector[e_count+13] = e01y;
-                element_vector[e_count+14] = e01z;
-                element_vector[e_count+15] = e02x;
-                element_vector[e_count+16] = e02y;
-                element_vector[e_count+17] = e02z;
+                // element_vector[e_count+12] = e01x;
+                // element_vector[e_count+13] = e01y;
+                // element_vector[e_count+14] = e01z;
+                // element_vector[e_count+15] = e02x;
+                // element_vector[e_count+16] = e02y;
+                // element_vector[e_count+17] = e02z;
 
-                element_vector[e_count+18] = normal_length;
+                // element_vector[e_count+18] = normal_length;
 
                 counter1++;
             }    
