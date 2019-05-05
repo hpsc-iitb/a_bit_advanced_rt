@@ -144,6 +144,8 @@ void render_gpu(
     image_plane[pixel_num] = 0.0;
     unsigned int ids[20];
     unsigned int idx = 0;
+
+    // unsigned int ct = 0;
     
     unsigned long _j;
     
@@ -174,8 +176,6 @@ void render_gpu(
         tree, tree_idx, ids, idx, 0, false
     ))
     {
-        // return;
-    // image_plane[pixel_num] = ((float)idx)/10.0;
         for(unsigned int _i = 0; _i < idx; _i++)
         {
             leaf_pos = (unsigned int)tree_idx[ids[_i]];
@@ -185,14 +185,6 @@ void render_gpu(
                 ax = elems[_j];
                 ay = elems[_j+1];
                 az = elems[_j+2];
-
-                // bx = elems[_j+3];
-                // by = elems[_j+4];
-                // bz = elems[_j+5];
-
-                // cx = elems[_j+6];
-                // cy = elems[_j+7];
-                // cz = elems[_j+8];
 
                 nx = elems[_j + 9];
                 ny = elems[_j + 10];
@@ -208,7 +200,7 @@ void render_gpu(
 
                 nl = elems[_j + 18];
 
-                D = - nl*(nx * rdx + ny*rdy + nz*rdz);  // |-d e1 e2| = -n.d
+                D = - nl*(nx*rdx + ny*rdy + nz*rdz);  // |-d e1 e2| = -n.d
 
                 if(fabs(D) < 1e-6)
                 {
@@ -253,20 +245,24 @@ void render_gpu(
             }
         }
     }
-    // image_plane[pixel_num] = t/80;
-    rox = rox + rdx*min_dis;
-    roy = roy + rdy*min_dis;
-    roz = roz + rdz*min_dis;
 
-    rdx = lights[0] - rox;
-    rdy = lights[1] - roy;
-    rdz = lights[2] - roz;
+    if(min_dis < 1e19)
+    {
+        rox = rox + rdx*min_dis;
+        roy = roy + rdy*min_dis;
+        roz = roz + rdz*min_dis;
 
-    d_normalize(rdx, rdy, rdz, nrdx, nrdy, nrdz);
+        rdx = lights[0] - rox;
+        rdy = lights[1] - roy;
+        rdz = lights[2] - roz;
 
-    image_plane[pixel_num] = fabs(elems[hit_elem+9]*nrdx + elems[hit_elem+10]*nrdy + elems[hit_elem+11]*nrdz);
+        d_normalize(rdx, rdy, rdz, nrdx, nrdy, nrdz);
+
+        image_plane[pixel_num] = fabs(elems[hit_elem+9]*nrdx + elems[hit_elem+10]*nrdy + elems[hit_elem+11]*nrdz);
+    }
     
     idx = 0;
+    // return;
 
     if(d_rayTreeIntersection(
         rox, roy, roz, rdx, rdy, rdz,
@@ -451,17 +447,18 @@ int main(int argc, char** argv)
     
     while(window.isOpen())
     {
-        image_plane = \
-        (FL_TYPE *)calloc(w * h * channels, sizeof(FL_TYPE));
-        if(!image_plane)
-        {
-            throw std::runtime_error("can't allocate memory for image plane");
-        }
+        // image_plane = \
+        // (FL_TYPE *)calloc(w * h * channels, sizeof(FL_TYPE));
+        // if(!image_plane)
+        // {
+        //     throw std::runtime_error("can't allocate memory for image plane");
+        // }
 
         auto start_time = std::chrono::high_resolution_clock::now();
         sf::Texture texture;
         texture.create(w, h);
         sf::Sprite sprite(texture);
+        
 
         sf::Event event;
         while(window.pollEvent(event))
@@ -487,6 +484,11 @@ int main(int argc, char** argv)
                 else if(event.key.code == sf::Keyboard::Right)
                 {
                     camera[0] += 0.5;
+                }
+
+                else if(event.key.code == sf::Keyboard::Key::S)
+                {
+                    RayTrace::writeImage(image_plane, "a.ppm");
                 }
 
             }
@@ -522,11 +524,16 @@ int main(int argc, char** argv)
         auto end_time = std::chrono::high_resolution_clock::now();
         double time_spent = std::chrono::duration<double, std::milli>(end_time - start_time).count();
         std::cout << "Render time taken: " << time_spent << "ms\n";
-        free(image_plane);
     }
-
-    // RayTrace::writeImage(image_plane, "a.ppm");
+    free(image_plane);
     free(rays);
+    delete sf_pixbuf;
+    cudaFree(d_rays);
+    cudaFree(d_image_plane);
+    cudaFree(d_lights);
+    cudaFree(d_elems);
+    cudaFree(d_tree);
+    cudaFree(d_tree_idx);
 }
 
 
