@@ -224,7 +224,7 @@ void flattenTree(
     vec_pos.resize(Node::all_nodes.size(), -1);
     /*
     id: 1, vertices: 24, is_leaf: 1, num_contained_elems: 1,
-    (if not a leaf){ids of children: 8, location of children: 8},
+    (if not a leaf){ids of children: 8},
     (if leaf){idx of contained elements}
     */
     for(size_t _i = 0; _i < Node::node_as_depths.size(); _i++)
@@ -241,8 +241,23 @@ void flattenTree(
             {
                 vec.push_back(n->vertices[_k]);
             }
-            
+            vec.push_back(n->is_leaf);
+            vec.push_back(n->num_all_contained_elements);
+            if(!n->is_leaf)
+            {
+                for(size_t _k = 0; _k < 8; _k++)
+                {
+                    vec.push_back(n->subnodes.at(_k)->node_id);
+                }                
+            }
+            else
+            {
+                vec.push_back(n->elements.size());
+                for(size_t _k = 0; _k < n->elements.size(); _k++)
+                {
+                    vec.push_back(n->elements.at(_k));
+                }
+            }
         }
-        
     }
 }
