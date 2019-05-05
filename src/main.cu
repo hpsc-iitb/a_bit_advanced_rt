@@ -104,10 +104,10 @@ bool d_rayTreeIntersection(
 
     if(tmin <= tmax)
     {
-        // there exists a parameter t for which ray intersects block
+        // there exists a parameter t for which ray intersects nodes
         if(tree[ctpos+25])
         {
-            // last node, add own id to intersecting_nodes
+            // last node, add own id to intersecting nodes
             ids[idx++] = tree[ctpos];
             return true;
         }
