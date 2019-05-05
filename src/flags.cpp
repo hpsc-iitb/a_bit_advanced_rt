@@ -1,7 +1,7 @@
 #include "flags.hpp"
 
-size_t w = 100;
-size_t h = 100;
+size_t w = 320;
+size_t h = 320;
 
 FL_TYPE w_r = 0.3;
 FL_TYPE h_r = 0.3;

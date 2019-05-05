@@ -2,6 +2,7 @@
 #include <raytrace.hpp>
 #include <iostream>
 #include <cmath>
+#include <omp.h>
 
 
 void render(
@@ -27,7 +28,8 @@ void render(
     FL_TYPE nx, ny, nz, nl; // surface normal
     FL_TYPE e01x, e01y, e01z, e02x, e02y, e02z;
     FL_TYPE ray_length_1; // 1/shadow_ray_length
-
+    omp_set_num_threads(8);
+    #pragma omp parallel for private (t, illum, u, v, rox, roy, roz, rdx, rdy, rdz, ax, ay, az, bx, by, bz, cx, cy, cz, px, py, pz, nx, ny, nz, nl, e01x, e01y, e01z, e02x, e02y, e02z, ray_length_1)
     for (size_t _i = 0; _i < w * h * 6; _i+=6)
     {
         rox = rays[_i];
@@ -155,6 +157,7 @@ void render(
     // }
 
 
+    #pragma omp parallel for private (t, illum, u, v, rox, roy, roz, rdx, rdy, rdz, ax, ay, az, bx, by, bz, cx, cy, cz, px, py, pz, nx, ny, nz, nl, e01x, e01y, e01z, e02x, e02y, e02z, ray_length_1)
     for (size_t _i = 0; _i < w * h * 6; _i+=6)
     {
         if (is_hit[_i/6] == -1)
