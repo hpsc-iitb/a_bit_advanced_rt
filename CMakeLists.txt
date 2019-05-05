@@ -15,7 +15,7 @@ include_directories(include)
 
 #Sources
 # AUX_SOURCE_DIRECTORY(src/ ALL_SOURCES)
-set(SOURCES src/main.cpp src/utils.cpp src/flags.cpp src/domainparser.cpp src/raytrace.cpp src/tree.cpp)
+set(SOURCES src/main.cu src/utils.cpp src/flags.cpp src/domainparser.cpp src/raytrace.cpp src/tree.cpp)
 set(SFML_DIR "${CMAKE_SOURCE_DIR}/SFML/lib/cmake/SFML")
 
 set(EXEC_NAME raytrace)
@@ -35,11 +35,18 @@ if(SFML_FOUND)
   include_directories(${SFML_INCLUDE_DIR})
 endif()
 
+find_package(CUDA REQUIRED)
+message("CUDA at ${CUDA_LIBRARIES}")
+
 # if(SFML_FOUND AND OpenCL_FOUND)
 #   add_executable(${EXEC_NAME} ${ALL_SOURCES})
 #   target_link_libraries(${EXEC_NAME} sfml-window sfml-graphics sfml-system ${OpenCL_LIBRARIES})
 # endif()
 if(SFML_FOUND)
-    add_executable(${EXEC_NAME} ${SOURCES})
-    target_link_libraries(${EXEC_NAME} sfml-window sfml-graphics sfml-system)
+    cuda_add_executable(${EXEC_NAME} ${SOURCES} OPTIONS -maxrregcount=32)
+    set_target_properties( ${EXEC_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_link_libraries(${EXEC_NAME} sfml-window sfml-graphics sfml-system ${CUDA_LIBRARIES})
 endif()
+
+# cuda_add_executable(${EXEC_NAME} ${SOURCES} OPTIONS -maxrregcount=32)
+# target_link_libraries(${EXEC_NAME} )

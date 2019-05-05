@@ -9,7 +9,7 @@
 #define M_PI 3.14159
 #endif
 
-typedef double FL_TYPE; // typedef to change types quickly
+typedef float FL_TYPE; // typedef to change types quickly
 
 extern size_t w; // width of image, pixels
 extern size_t h; // height of image, pixels
