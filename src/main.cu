@@ -454,7 +454,6 @@ int main(int argc, char** argv)
         //     throw std::runtime_error("can't allocate memory for image plane");
         // }
 
-        auto start_time = std::chrono::high_resolution_clock::now();
         sf::Texture texture;
         texture.create(w, h);
         sf::Sprite sprite(texture);
@@ -494,6 +493,7 @@ int main(int argc, char** argv)
             }
             // sf::Image image()
         }
+        auto start_time = std::chrono::high_resolution_clock::now();
 
         RayTrace::updateRays(camera, rays);
 
@@ -506,6 +506,7 @@ int main(int argc, char** argv)
         );
    
         cudaMemcpy(image_plane, d_image_plane, w*h*sizeof(FL_TYPE), cudaMemcpyDeviceToHost);
+        auto end_time = std::chrono::high_resolution_clock::now();
 
         for(size_t _i = 0; _i < w*h; _i++)
         {
@@ -521,7 +522,6 @@ int main(int argc, char** argv)
         window.draw(sprite);
         window.display();
 
-        auto end_time = std::chrono::high_resolution_clock::now();
         double time_spent = std::chrono::duration<double, std::milli>(end_time - start_time).count();
         std::cout << "Render time taken: " << time_spent << "ms\n";
     }
