@@ -24,14 +24,15 @@ std::vector<FL_TYPE> camera(3, 0);
 
 
 __global__ 
-void checkintersection(float* nodes,float* rays, float* ts, size_t elem_size)
+void primary_rays(float* nodes,float* rays, float* illums, float* lights, size_t elem_size)
 {
     int _i = blockIdx.x * blockDim.x + threadIdx.x;
     // int _j = get_global_id(1);
     float ax,ay,az,bx,by,bz,cx,cy,cz,e01x,e01y,e01z,e02x,e02y,e02z,\
-    tx,ty,tz,u,v,D, Dy, Dz, t, nx, ny, nz, rox, roy, roz, rdx, rdy, rdz;
+    tx,ty,tz,u,v,D, Dy, Dz, t, nx, ny, nz, rox, roy, roz, rdx, rdy, rdz, ray_length_1;
 
     float min_dis = 1e20;
+    int near_ele_num = -1;
 
     unsigned int sz, eidx;
     
@@ -59,7 +60,7 @@ void checkintersection(float* nodes,float* rays, float* ts, size_t elem_size)
         __syncthreads();
         for(unsigned int _m = 0; _m < sz; _m+= 9)
         {
-            eidx = _j + _m;
+            //eidx = _j + _m;
             ax = elems_shared[_m];
             ay = elems_shared[_m+1];
             az = elems_shared[_m+2];
@@ -135,16 +136,96 @@ void checkintersection(float* nodes,float* rays, float* ts, size_t elem_size)
             }
             if(t < min_dis)
             {
+                near_ele_num = _j+_m;
                 min_dis = t;
             }
         }
         __syncthreads();
     }
-    if(min_dis < 1e19)
+    __syncthreads();
+    // if(min_dis<1e19)
+    // {
+    //     is_hit[_i] = near_ele_num;
+    //     ts[_i] = min_dis;
+    // }
+
+    //for (size_t _j = 0; _j < w * h * 6; _j+=6)
+    //{
+    for(unsigned int _p = 0; _p < elem_size*9; _p+=100*9)
     {
-        ts[_i] = min_dis;
+        sz = ((elem_size*9 - _p)>=100*9)?100*9:(elem_size*9 - _p);
+        if(threadIdx.x == 0)
+        {
+            for(unsigned int _q = 0; _q < sz; _q++)
+            {
+                elems_shared[_q] = nodes[_p + _q];
+            }
+        }
+        __syncthreads();
+        if(near_ele_num == -1)
+        {
+            image_plane[_i] = 0.0;
+            continue;
+        }
+        else
+        {
+            //t = ts[_j/6];
+            //int eid = near_ele_num;
+            srox = rox + rdx * min_dis;
+            sroy = roy + rdy * min_dis;
+            sroz = roz + rdz * min_dis;
+    
+            for(unsigned int _r = 0; _r < sz; _r+= 9)
+            {
+                //eidx = _j + _r;
+                ax = elems_shared[_r];
+                ay = elems_shared[_r+1];
+                az = elems_shared[_r+2];
+
+                bx = elems_shared[_r+3];
+                by = elems_shared[_r+4];
+                bz = elems_shared[_r+5];
+
+                cx = elems_shared[_r+6];
+                cy = elems_shared[_r+7];
+                cz = elems_shared[_r+8];
+
+                // nx = nodes[_j + 9];
+                // ny = nodes[_j + 10];
+                // nz = nodes[_j + 11];
+
+                e01x = bx - ax;
+                e01y = by - ay;
+                e01z = bz - az;
+                
+                e02x = cx - ax;
+                e02y = cy - ay;
+                e02z = cz - az;
+
+                nx = e01y * e02z - e01z * e02y;
+                ny = e01z * e02x - e01x * e02z;
+                nz = e01x * e02y - e01y * e02x;
+
+
+                FL_TYPE lx = lights[0];
+                FL_TYPE ly = lights[1];
+                FL_TYPE lz = lights[2];
+
+                
+                rdx = lx - srox;
+                rdy = ly - sroy;
+                rdz = lz - sroz;
+
+                ray_length_1 = 1/sqrt(rdx * rdx + rdy * rdy + rdz * rdz);
+                rdx *= ray_length_1;
+                rdy *= ray_length_1;
+                rdz *= ray_length_1;
+                image_plane[_i] = fabs(rdx * nx + rdy * ny + rdz * nz);
+            }
+        }        
     }
 }
+
 
 
 
@@ -174,6 +255,7 @@ int main(int argc, char** argv)
     // will be updated by void RayTrace::updateRays
     // [origin direction   origin direction...]
     FL_TYPE *rays = (FL_TYPE *)malloc(sizeof(FL_TYPE) * w * h * 2 * 3);
+    FL_TYPE *shadow_rays = (FL_TYPE *)malloc(sizeof(FL_TYPE) * w * h * 2 * 3);
     if(!rays)
     {
         throw std::runtime_error("can't allocate memory for rays");
@@ -182,34 +264,39 @@ int main(int argc, char** argv)
 
     FL_TYPE *nodes = &element_vector[0];
     FL_TYPE *ts = (FL_TYPE *)malloc(sizeof(FL_TYPE) * w * h);
+    FL_TYPE *is_hit = (FL_TYPE *)malloc(sizeof(FL_TYPE) * w * h);
     for(size_t _i = 0; _i < w*h; _i++)
     {
         ts[_i] = 1e20;
+        is_hit[_i] = -1;
     }
     
-
     FL_TYPE *drays, *dnodes, *dts;
+    FL_TYPE lights[] = {lx, ly, lz};
 
     cudaMalloc((void **)&drays, w*h*6*sizeof(FL_TYPE));
-    cudaMalloc((void **)&dts, w*h*sizeof(FL_TYPE));
+    cudaMalloc((void **)&dimage_plane, w*h*sizeof(FL_TYPE));
+    cudaMalloc((void **)&dlights, 3*sizeof(FL_TYPE));
     cudaMalloc((void **)&dnodes, element_vector.size()*sizeof(FL_TYPE));
 
-    cudaMemcpy(dts, ts, w*h*sizeof(FL_TYPE), cudaMemcpyHostToDevice);
+    cudaMemcpy(dimage_plane, image_plane, w*h*sizeof(FL_TYPE), cudaMemcpyHostToDevice);
+    cudaMemcpy(dlights, lights, 3*sizeof(FL_TYPE), cudaMemcpyHostToDevice);
     cudaMemcpy(dnodes, nodes, element_vector.size()*sizeof(FL_TYPE), cudaMemcpyHostToDevice);
-  
-    FL_TYPE lights[] = {lx, ly, lz};
-    // render(rays, nodes, element_vector.size() / element_size, lights, 1, image_plane);
-    std::cout << "zzz\n";
-    auto start_time = std::chrono::high_resolution_clock::now();
     cudaMemcpy(drays, rays, w*h*6*sizeof(FL_TYPE), cudaMemcpyHostToDevice);
 
-    checkintersection<<<h, w>>>(dnodes, drays, dts, (element_vector.size()/element_size));
+    // render(rays, nodes, element_vector.size() / element_size, lights, 1, image_plane);
+    //std::cout << "zzz\n";
+    auto start_time = std::chrono::high_resolution_clock::now();
 
-    cudaMemcpy(ts, dts, w*h*sizeof(FL_TYPE), cudaMemcpyDeviceToHost);
+    primary_rays<<<h, w>>>(dnodes, drays, dimage_plane, dlights, (element_vector.size()/element_size));
+
+    cudaMemcpy(image_plane, dimage_plane, w*h*sizeof(FL_TYPE), cudaMemcpyDeviceToHost);
 
     auto end_time = std::chrono::high_resolution_clock::now();
     double time_spent = std::chrono::duration<double, std::milli>(end_time - start_time).count();
     std::cout << "Render time taken: " << time_spent << "ms\n";
+    //cudaMemcpy(drays, shadow_rays, w*h*6*sizeof(FL_TYPE), cudaMemcpyHostToDevice);
+    
 
     // for(size_t _i = 0; _i < h; _i++)
     // {
@@ -222,11 +309,9 @@ int main(int argc, char** argv)
     // }
     
 
-    // RayTrace::writeImage(image_plane, "a.ppm");
+    RayTrace::writeImage(image_plane, "a.ppm");
     cudaFree(drays);
-    cudaFree(dts);
+    cudaFree(dlights);
+    cudaFree(dimage_plane);
     cudaFree(dnodes);
 }
-
-
-// TODO: normalize rays
