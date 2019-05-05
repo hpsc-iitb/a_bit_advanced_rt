@@ -33,6 +33,9 @@ extern size_t element_size; // size of an element in element_vector
 extern FL_TYPE tree_plus_tol;
 extern FL_TYPE tree_minus_tol;
 
+// tree params
+extern unsigned int max_depth;
+
 #define USE_PRECOMPUTED_NORMALS
 
 #endif

@@ -12,7 +12,7 @@
 class Node
 {
     public:
-    Node(FL_TYPE ax, FL_TYPE ay, FL_TYPE az, FL_TYPE cur_l, FL_TYPE max_l);
+    Node(FL_TYPE ax, FL_TYPE ay, FL_TYPE az, FL_TYPE cur_l, FL_TYPE max_l, int depth = 0);
     size_t numElementsInside();
     bool rayIntersection(
         FL_TYPE rox, FL_TYPE roy, FL_TYPE roz,
@@ -27,12 +27,18 @@ class Node
     std::vector<size_t> elements;
     bool is_leaf;
     size_t num_all_contained_elements;
+    int depth;
 
     static size_t node_count;
     static std::vector<Node *> all_nodes;
+    static std::vector<std::vector<Node *>> node_as_depths;
 };
 
 
 void fillTree(FL_TYPE *element_nodes, size_t num_elements);
 
+void flattenTree(
+    std::vector<FL_TYPE> &vec,
+    std::vector<FL_TYPE> &vec_pos
+);
 #endif

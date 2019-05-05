@@ -65,7 +65,8 @@ int main(int argc, char** argv)
         domain_limits[4] + fabs(max_length*(1-tree_plus_tol)),
         domain_limits[2] - fabs(max_length*(1-tree_minus_tol)),
         max_length*tree_plus_tol/tree_minus_tol,
-        2);
+        max_length*tree_plus_tol/(tree_minus_tol*powf(2, max_depth))
+    );
         
     std::cout << "Octree nodes: " << Node::node_count << " \n";
 
@@ -89,6 +90,8 @@ int main(int argc, char** argv)
   
     FL_TYPE lights[] = {lx, ly, lz};
     
+    std::vector<FL_TYPE> vec_tree(0), vec_tree_ids(0);
+    flattenTree(vec_tree, vec_tree_ids);
 
     sf::RenderWindow window(sf::VideoMode(w, h), "Render");    
     

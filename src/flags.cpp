@@ -21,3 +21,5 @@ size_t element_size = 19;
 // tree tolerances
 FL_TYPE tree_plus_tol = 1.2;
 FL_TYPE tree_minus_tol = 0.8;
+
+unsigned int max_depth = 4;

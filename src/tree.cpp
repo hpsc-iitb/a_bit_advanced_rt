@@ -7,7 +7,7 @@
 #include <utils.hpp>
 
 Node::Node(
-    FL_TYPE ax, FL_TYPE ay, FL_TYPE az, FL_TYPE cur_l, FL_TYPE max_l
+    FL_TYPE ax, FL_TYPE ay, FL_TYPE az, FL_TYPE cur_l, FL_TYPE max_l, int depth
 )
 {
     if(cur_l < max_l)
@@ -26,6 +26,8 @@ Node::Node(
     this->node_id = Node::node_count;
     Node::node_count++;
     Node::all_nodes.push_back(this);
+    Node::node_as_depths.at(depth).push_back(this);
+    this->depth = depth;
     /*
      e---f
     /|  /|
@@ -54,7 +56,7 @@ Node::Node(
             ay - 0.5*cur_l * ((_i%4)>1?1:0),
             az + 0.5*cur_l * ((_i/4)>0?1:0),
             cur_l / 2,
-            max_l
+            max_l, this->depth + 1
         );
         this->subnodes.push_back(n);
     }
@@ -172,6 +174,7 @@ bool Node::rayIntersection(
 
 size_t Node::node_count = 0;
 std::vector<Node *> Node::all_nodes(0);
+std::vector<std::vector <Node *>> Node::node_as_depths(max_depth + 1);
 
 void fillTree(FL_TYPE *element_nodes, size_t num_elements)
 {
@@ -209,5 +212,37 @@ void fillTree(FL_TYPE *element_nodes, size_t num_elements)
             }
             
         }
+    }
+}
+
+void flattenTree(
+    std::vector<FL_TYPE> &vec,
+    std::vector<FL_TYPE> &vec_pos
+    )
+{
+    vec.resize(0);
+    vec_pos.resize(Node::all_nodes.size(), -1);
+    /*
+    id: 1, vertices: 24, is_leaf: 1, num_contained_elems: 1,
+    (if not a leaf){ids of children: 8, location of children: 8},
+    (if leaf){idx of contained elements}
+    */
+    for(size_t _i = 0; _i < Node::node_as_depths.size(); _i++)
+    {
+        // std::cout << Node::node_as_depths.at(_i).size() << "\n";
+        for(size_t _j = 0; _j < Node::node_as_depths.at(_i).size(); _j++)
+        {
+            Node *n = Node::node_as_depths.at(_i).at(_j);
+            vec_pos[n->node_id] = vec.size();
+            
+            //push id
+            vec.push_back(n->node_id);
+            for(size_t _k = 0; _k < 24; _k++)
+            {
+                vec.push_back(n->vertices[_k]);
+            }
+            
+        }
+        
     }
 }
