@@ -1,7 +1,7 @@
 #include "flags.hpp"
 
-size_t w = 100;
-size_t h = 100;
+size_t w = 400;
+size_t h = 400;
 
 FL_TYPE w_r = 0.3;
 FL_TYPE h_r = 0.3;
@@ -22,4 +22,4 @@ size_t element_size = 19;
 FL_TYPE tree_plus_tol = 1.2;
 FL_TYPE tree_minus_tol = 0.8;
 
-unsigned int max_depth = 4;
+unsigned int max_depth = 5;
