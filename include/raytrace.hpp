@@ -1,10 +1,14 @@
 #ifndef RAYTRACE_HPP
 #define RAYTRACE_HPP
 #include <flags.hpp>
+#include <chrono>
+
+#include <tree.hpp>
 
 void render(
     FL_TYPE *rays, FL_TYPE *nodes, size_t num_elements,
-    FL_TYPE *lights, size_t num_lights, FL_TYPE *image_plane
+    FL_TYPE *lights, size_t num_lights, FL_TYPE *image_plane,
+    Node &root
 );
 
 inline bool checkIntersection(
@@ -31,8 +35,4 @@ inline FL_TYPE distance(
     FL_TYPE bx, FL_TYPE by, FL_TYPE bz
 );
 
-inline void normalize(
-    FL_TYPE &x, FL_TYPE &y, FL_TYPE &z,
-    FL_TYPE &nx, FL_TYPE &ny, FL_TYPE &nz
-);
 #endif

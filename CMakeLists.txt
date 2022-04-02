@@ -4,10 +4,10 @@ project(ratyrace)
 # set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/builds)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/libs)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 # set(CMAKE_CXX_F)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
-# set(CMAKE_CXX_FLAGS "-Ofast -march=native -ffast-math")
+set(CMAKE_CXX_FLAGS "-Ofast -march=native -ffast-math")
 # set(CMAKE_CXX_FLAGS "-pg")
 
 #Headers
@@ -15,7 +15,8 @@ include_directories(include)
 
 #Sources
 # AUX_SOURCE_DIRECTORY(src/ ALL_SOURCES)
-set(SOURCES src/main.cpp src/utils.cpp src/flags.cpp src/domainparser.cpp src/raytrace.cpp)
+set(SOURCES src/main.cu src/utils.cpp src/flags.cpp src/domainparser.cpp src/raytrace.cpp src/tree.cpp)
+set(SFML_DIR "${CMAKE_SOURCE_DIR}/SFML/lib/cmake/SFML")
 
 set(EXEC_NAME raytrace)
 
@@ -29,13 +30,23 @@ set(EXEC_NAME raytrace)
 # endif()
 
 
-# find_package(SFML 2.5 COMPONENTS graphics window system)
-# if(SFML_FOUND)
-#   include_directories(${SFML_INCLUDE_DIR})
-# endif()
+find_package(SFML 2.5 COMPONENTS graphics window system)
+if(SFML_FOUND)
+  include_directories(${SFML_INCLUDE_DIR})
+endif()
+
+find_package(CUDA REQUIRED)
+message("CUDA at ${CUDA_LIBRARIES}")
 
 # if(SFML_FOUND AND OpenCL_FOUND)
 #   add_executable(${EXEC_NAME} ${ALL_SOURCES})
 #   target_link_libraries(${EXEC_NAME} sfml-window sfml-graphics sfml-system ${OpenCL_LIBRARIES})
 # endif()
-add_executable(${EXEC_NAME} ${SOURCES})
+if(SFML_FOUND)
+    cuda_add_executable(${EXEC_NAME} ${SOURCES} OPTIONS -maxrregcount=32)
+    set_target_properties( ${EXEC_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+    target_link_libraries(${EXEC_NAME} sfml-window sfml-graphics sfml-system ${CUDA_LIBRARIES})
+endif()
+
+# cuda_add_executable(${EXEC_NAME} ${SOURCES} OPTIONS -maxrregcount=32)
+# target_link_libraries(${EXEC_NAME} )

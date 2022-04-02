@@ -9,7 +9,7 @@
 #define M_PI 3.14159
 #endif
 
-typedef double FL_TYPE; // typedef to change types quickly
+typedef float FL_TYPE; // typedef to change types quickly
 
 extern size_t w; // width of image, pixels
 extern size_t h; // height of image, pixels
@@ -28,6 +28,13 @@ extern FL_TYPE ly;
 extern FL_TYPE lz;
 
 extern size_t element_size; // size of an element in element_vector
+
+// tree tolerances
+extern FL_TYPE tree_plus_tol;
+extern FL_TYPE tree_minus_tol;
+
+// tree params
+extern unsigned int max_depth;
 
 #define USE_PRECOMPUTED_NORMALS
 

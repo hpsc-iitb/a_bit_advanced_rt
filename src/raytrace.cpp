@@ -2,11 +2,14 @@
 #include <raytrace.hpp>
 #include <iostream>
 #include <cmath>
+#include <chrono>
+#include <tree.hpp>
 
 
 void render(
     FL_TYPE *rays, FL_TYPE *nodes, size_t num_elements,
-    FL_TYPE *lights, size_t num_lights, FL_TYPE *image_plane
+    FL_TYPE *lights, size_t num_lights, FL_TYPE *image_plane,
+    Node &root
 )
 {
     size_t *is_hit = (size_t  *)malloc(sizeof(size_t) * w * h); // ray hit
@@ -28,8 +31,15 @@ void render(
     FL_TYPE e01x, e01y, e01z, e02x, e02y, e02z;
     FL_TYPE ray_length_1; // 1/shadow_ray_length
 
+    size_t ray_calcs = 0, ray_hits = 0;
+
+    auto render_start_time = std::chrono::high_resolution_clock::now();
+    size_t sum_idx = 0;
     for (size_t _i = 0; _i < w * h * 6; _i+=6)
     {
+        size_t *nodes_hit = (size_t *)calloc(Node::node_count, sizeof(size_t));
+        int idx = 0;
+
         rox = rays[_i];
         roy = rays[_i+1];
         roz = rays[_i+2];
@@ -37,64 +47,68 @@ void render(
         rdx = rays[_i+3];
         rdy = rays[_i+4];
         rdz = rays[_i+5];
-    // std::cout << rdx << " " << rdy << " " << rdz << " " << "\n";
-
-        FL_TYPE min_dis = 1e10;
-        for (size_t _j = 0; _j < num_elements * element_size; _j+=element_size)
-        {    
-            ax = nodes[_j];
-            ay = nodes[_j+1];
-            az = nodes[_j+2];
-
-            bx = nodes[_j+3];
-            by = nodes[_j+4];
-            bz = nodes[_j+5];
-
-            cx = nodes[_j+6];
-            cy = nodes[_j+7];
-            cz = nodes[_j+8];
-
-            nx = nodes[_j + 9];
-            ny = nodes[_j + 10];
-            nz = nodes[_j + 11];
-
-            e01x = nodes[_j + 12];
-            e01y = nodes[_j + 13];
-            e01z = nodes[_j + 14];
-            
-            e02x = nodes[_j + 15];
-            e02y = nodes[_j + 16];
-            e02z = nodes[_j + 17];
-
-            nl = nodes[_j + 18];
-            
-            if(checkIntersection(
-                rox, roy, roz, rdx, rdy, rdz, ax, ay, az,
-                bx, by, bz, cx, cy, cz, nx, ny, nz,
-                e01x, e01y, e01z, e02x, e02y, e02z,
-                t, illum, u, v, nl
-            ))
+   
+        if(root.rayIntersection(rox, roy, roz, rdx, rdy, rdz, nodes_hit, idx))
+        {
+            FL_TYPE min_dis = 1e10;
+            for (size_t _k = 0; _k < idx; _k++)
             {
-                px = rox + t*rdx;
-                py = roy + t*rdy;
-                pz = roz + t*rdz;
-                // optimisation, use norm
-                FL_TYPE dis = distance(
-                    px, py, pz, rox, roy, roz
-                );
-                if(dis < min_dis)
+                std::vector<size_t> elems = Node::all_nodes.at(nodes_hit[_k])->elements;
+                for (size_t _m : elems)
                 {
-                    is_hit[_i/6] = _j/element_size;
-                    ts[_i/6] = t;
-                    min_dis = dis;
-                    // image_plane[_i/6] = illum;
-                }
+                    size_t _j = _m*element_size;
+                    ray_calcs++;
+                    ax = nodes[_j];
+                    ay = nodes[_j+1];
+                    az = nodes[_j+2];
+
+                    bx = nodes[_j+3];
+                    by = nodes[_j+4];
+                    bz = nodes[_j+5];
+
+                    cx = nodes[_j+6];
+                    cy = nodes[_j+7];
+                    cz = nodes[_j+8];
+
+                    nx = nodes[_j + 9];
+                    ny = nodes[_j + 10];
+                    nz = nodes[_j + 11];
+
+                    e01x = nodes[_j + 12];
+                    e01y = nodes[_j + 13];
+                    e01z = nodes[_j + 14];
+                    
+                    e02x = nodes[_j + 15];
+                    e02y = nodes[_j + 16];
+                    e02z = nodes[_j + 17];
+
+                    nl = nodes[_j + 18];
+                    
+                    if(checkIntersection(
+                        rox, roy, roz, rdx, rdy, rdz, ax, ay, az,
+                        bx, by, bz, cx, cy, cz, nx, ny, nz,
+                        e01x, e01y, e01z, e02x, e02y, e02z,
+                        t, illum, u, v, nl
+                    ))
+                    {
+                        ray_hits++;
+                        if(t < min_dis)
+                        {
+                            is_hit[_i/6] = _j/element_size;
+                            ts[_i/6] = t;
+                            min_dis = t;
+                        }
+                    }
+                }   
             }
         }
+        free(nodes_hit);
     }
+    auto primary_end_time = std::chrono::high_resolution_clock::now();
 
     std::cout << "Primary ray hit complete\n";
-
+    std::cout << "Ray calcs: " << ray_calcs\
+    << "\nRay hits: " << ray_hits << "\n";
     // return;
     // calculate illumination
     for (size_t _j = 0; _j < w * h * 6; _j+=6)
@@ -135,7 +149,8 @@ void render(
 
         }        
     }
-    
+
+    auto illum_end_time = std::chrono::high_resolution_clock::now();    
     std::cout << "Done calculating illumination\n";
     // return;
 
@@ -154,7 +169,8 @@ void render(
     //     std::cout << "\n";
     // }
 
-
+    ray_calcs = 0;
+    ray_hits = 0;
     for (size_t _i = 0; _i < w * h * 6; _i+=6)
     {
         if (is_hit[_i/6] == -1)
@@ -176,66 +192,93 @@ void render(
             rdx = lights[_k * 3 + 0] - rox;
             rdy = lights[_k * 3 + 1] - roy;
             rdz = lights[_k * 3 + 2] - roz;
-
+            size_t *nodes_hit = (size_t *)calloc(Node::node_count, sizeof(size_t));
+            int idx = 0;
             // image_plane[_i/6] = 1.0;
-            
-            for (size_t _j = 0; _j < num_elements * element_size; _j+=element_size)
-            {   
-                if(_j / element_size == is_hit[_i / 6]) // stop self hits
+            if(root.rayIntersection(rox, roy, roz, rdx, rdy, rdz, nodes_hit, idx))
+            {
+                FL_TYPE min_dis = 1e10;
+                for (size_t _m = 0; _m < idx; _m++)
                 {
-                    continue;
-                }
-                ax = nodes[_j];
-                ay = nodes[_j+1];
-                az = nodes[_j+2];
+                    std::vector<size_t> elems = Node::all_nodes.at(nodes_hit[_m])->elements;
+                    for (size_t _n : elems)
+                    {
+                        if(_n == is_hit[_i / 6]) // stop self hits
+                        {
+                            continue;
+                        }
+                        size_t _j = _n*element_size;
+                        ray_calcs++;
+                        ax = nodes[_j];
+                        ay = nodes[_j+1];
+                        az = nodes[_j+2];
 
-                bx = nodes[_j+3];
-                by = nodes[_j+4];
-                bz = nodes[_j+5];
+                        bx = nodes[_j+3];
+                        by = nodes[_j+4];
+                        bz = nodes[_j+5];
 
-                cx = nodes[_j+6];
-                cy = nodes[_j+7];
-                cz = nodes[_j+8];
+                        cx = nodes[_j+6];
+                        cy = nodes[_j+7];
+                        cz = nodes[_j+8];
 
-                nx = nodes[_j + 9];
-                ny = nodes[_j + 10];
-                nz = nodes[_j + 11];
+                        nx = nodes[_j + 9];
+                        ny = nodes[_j + 10];
+                        nz = nodes[_j + 11];
 
-                e01x = nodes[_j + 12];
-                e01y = nodes[_j + 13];
-                e01z = nodes[_j + 14];
-                
-                e02x = nodes[_j + 15];
-                e02y = nodes[_j + 16];
-                e02z = nodes[_j + 17];
+                        e01x = nodes[_j + 12];
+                        e01y = nodes[_j + 13];
+                        e01z = nodes[_j + 14];
+                        
+                        e02x = nodes[_j + 15];
+                        e02y = nodes[_j + 16];
+                        e02z = nodes[_j + 17];
 
-                nl = nodes[_j + 18];
-
-                if(checkIntersection(
-                    rox, roy, roz, rdx, rdy, rdz, ax, ay, az,
-                    bx, by, bz, cx, cy, cz, nx, ny, nz,
-                    e01x, e01y, e01z, e02x, e02y, e02z,
-                    t, illum, u, v, nl
-                ))
-                {
-                    // if(t > 0)
-                    // {
-                        // image_plane[_i/6] = 0.0;
-                        illums[_k * w * h + _i/6] = 0; // no illuminaiton due to this light
-                        // std::cout << "shadowed";
-                        break;
-                    // }
-                    // std::cout << roz << " " << rdz << " " << ax << " " << ay << " " << az << " " << t << " " << u << " " << v <<  "\n";
+                        nl = nodes[_j + 18];
+                        
+                        if(checkIntersection(
+                            rox, roy, roz, rdx, rdy, rdz, ax, ay, az,
+                            bx, by, bz, cx, cy, cz, nx, ny, nz,
+                            e01x, e01y, e01z, e02x, e02y, e02z,
+                            t, illum, u, v, nl
+                        ))
+                        {
+                            ray_hits++;
+                            illums[_k * w * h + _i/6] = 0; // no illuminaiton due to this light
+                            break;
+                        }
+                    }
                 }
             }
+            free(nodes_hit);
         }
     }
 
+    auto shadow_end_time = std::chrono::high_resolution_clock::now();    
+    
+    std::cout << "Ray calcs: " << ray_calcs\
+    << "\nRay hits: " << ray_hits << "\n";
+    
     for (size_t _i = 0; _i < w * h * num_lights; _i++)
     {
         image_plane[_i % (w*h)] += illums[_i];
     }
     
+    double t1 = std::chrono::duration<double, std::milli>(
+        primary_end_time - render_start_time).count();
+    double t2 = std::chrono::duration<double, std::milli>(
+        illum_end_time-primary_end_time).count();
+    double t3 = std::chrono::duration<double, std::milli>(
+        shadow_end_time - illum_end_time).count();
+
+
+    std::cout << "Primary rays time(ms): " << t1\
+    << "\nIllumination calculation time(ms): " << t2\
+    << "\nShadow rays time(ms): " << t3 << "\n";
+
+    std::cout << "\n Octree leafs total hit: " << sum_idx << "\n";
+    free(illums);
+    free(ts);
+    free(is_hit);
 }
 
 inline bool checkIntersection(
@@ -252,13 +295,13 @@ inline bool checkIntersection(
 )
 {   // calc the edges
 #ifndef USE_PRECOMPUTED_NORMALS
-    // FL_TYPE e01x = bx - ax;
-    // FL_TYPE e01y = by - ay;
-    // FL_TYPE e01z = bz - az;
+    e01x = bx - ax;
+    e01y = by - ay;
+    e01z = bz - az;
 
-    // FL_TYPE e02x = cx - ax;
-    // FL_TYPE e02y = cy - ay;
-    // FL_TYPE e02z = cz - az;
+    e02x = cx - ax;
+    e02y = cy - ay;
+    e02z = cz - az;
 
     FL_TYPE px, py, pz; // _nx, _ny, _nz;
     cross(rdx, rdy, rdz, e02x, e02y, e02z, px, py, pz);
@@ -301,8 +344,13 @@ inline bool checkIntersection(
 
     t = e02x * qx + e02y * qy + e02z * qz;
     t *= d_1;
-    
-    // cross(e01x, e01y, e01z, e02x, e02y, e02z, _nx, _ny, _nz);
+
+    if(t < 0)
+    {
+        return false;
+    }
+
+    cross(e01x, e01y, e01z, e02x, e02y, e02z, nx, ny, nz);
     FL_TYPE rdnx, rdny, rdnz, nnx, nny, nnz;
     normalize(rdx, rdy, rdz, rdnx, rdny, rdnz);
     normalize(nx, ny, nz, nnx, nny, nnz);
@@ -377,15 +425,4 @@ inline FL_TYPE distance(
     return sqrt(
         (bx - ax) * (bx - ax) + (by - ay) * (by - ay) + (bz - az) * (bz - az)
     );
-}
-
-inline void normalize(
-    FL_TYPE &x, FL_TYPE &y, FL_TYPE &z,
-    FL_TYPE &nx, FL_TYPE &ny, FL_TYPE &nz
-)
-{
-    FL_TYPE l = sqrt(x * x + y * y + z * z);
-    nx = x / l;
-    ny = y / l;
-    nz = z / l;
 }

@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <cmath>
+#include <algorithm>
 #include <domainparser.hpp>
 #include <flags.hpp>
 
@@ -21,9 +22,12 @@ std::vector<std::string> split(const std::string& s)
    return tokens;
 }
 
-void DomainParser(std::string file_name,std::vector <double> &element_vector,unsigned int num_of_nodes,unsigned int num_of_elements)
+void DomainParser(
+    std::string file_name, std::vector <FL_TYPE> &element_vector,
+    std::vector<FL_TYPE> &domain
+    )
 {
-    unsigned int counter = 1;
+    unsigned int counter = 1, num_of_nodes = 0, num_of_elements = 0;
     unsigned int counter1 = 0;
     unsigned int n_count;
     unsigned int e_count;
@@ -36,6 +40,12 @@ void DomainParser(std::string file_name,std::vector <double> &element_vector,uns
     FL_TYPE ax, ay, az, bx, by, bz, cx, cy, cz; // node coords
     FL_TYPE e01x, e01y, e01z, e02x, e02y, e02z, nx, ny, nz; // edges and surface normals
     FL_TYPE normal_length;
+
+    FL_TYPE xmin, ymin, zmin, xmax, ymax, zmax;
+
+    xmin = ymin = zmin = INFINITY;
+    xmax = ymax = zmax = -INFINITY;
+
     while (getline(infile,line)) 
     {  
         if (counter == 5)
@@ -81,7 +91,40 @@ void DomainParser(std::string file_name,std::vector <double> &element_vector,uns
                 element_vector[e_count+7] = cy = node_vector[ia3+1];
                 element_vector[e_count+8] = cz = node_vector[ia3+2];
                 
-                // get the edges
+                // calculate the domain
+
+                if(std::max(cx, std::max(ax, bx)) > xmax)
+                {
+                    xmax = std::max(cx, std::max(ax, bx));
+                }
+
+                if(std::max(cy, std::max(ay, by)) > ymax)
+                {
+                    ymax = std::max(cy, std::max(ay, by));
+                }
+
+                if(std::max(cz, std::max(az, bz)) > zmax)
+                {
+                    zmax = std::max(cz, std::max(az, bz));
+                }
+
+
+                if(std::min(cx, std::min(ax, bx)) < xmin)
+                {
+                    xmin = std::min(cx, std::min(ax, bx));
+                }
+
+                if(std::min(cy, std::min(ay, by)) < ymin)
+                {
+                    ymin = std::min(cy, std::min(ay, by));
+                }
+
+                if(std::min(cz, std::min(az, bz)) < zmin)
+                {
+                    zmin = std::min(cz, std::min(az, bz));
+                }
+
+                // calculate the edges
                 e01x = bx - ax;
                 e01y = by - ay;
                 e01z = bz - az;
@@ -115,7 +158,16 @@ void DomainParser(std::string file_name,std::vector <double> &element_vector,uns
         }
         counter++;
     }
+
     num_of_elements = counter1;
     element_vector.resize(num_of_elements*element_size);
     infile.close();
+    
+    domain[0] = xmin;
+    domain[1] = ymin;
+    domain[2] = zmin;
+
+    domain[3] = xmax;
+    domain[4] = ymax;
+    domain[5] = zmax;
 }

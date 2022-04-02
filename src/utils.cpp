@@ -1,4 +1,4 @@
-#include "utils.hpp"
+#include <utils.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -100,4 +100,15 @@ namespace RayTrace{
         
     }
 
+}
+
+void normalize(
+    FL_TYPE &x, FL_TYPE &y, FL_TYPE &z,
+    FL_TYPE &nx, FL_TYPE &ny, FL_TYPE &nz
+)
+{
+    FL_TYPE l = sqrt(x * x + y * y + z * z);
+    nx = x / l;
+    ny = y / l;
+    nz = z / l;
 }
